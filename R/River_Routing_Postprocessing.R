@@ -46,7 +46,7 @@ nonag_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", seasona
 # Read in EFRs
 # (NOTE: The calculation currently still includes avl_water from calcAvlWater
 # --> needs to be replaced by calculation that is only based on discharge!!!)
-EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="raw", aggregate=FALSE, seasonality="monthly")
+EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=dof, aggregate=FALSE, seasonality="monthly")
 
 
 ### River Routing
