@@ -47,8 +47,8 @@ calcCluster <- function(ctype, regionscode=madrat::regionscode(), seed=42, weigh
   #wkey <- ifelse(is.null(weight), "", gsub(".","",paste0("_",names(weight),weight,collapse=""),fixed=TRUE))
 
   # !!! HOW TO FORWARD NAME INFORMATION? !!! #
-  #write.spam(spam,path(ofolder,paste(hr,"-to-",lr,wkey,"_sum.spam",sep="")))
-  #saveRDS(spam2mapping(spam,rownames(cdata)), path(ofolder,paste(hr,"-to-",lr,wkey,"_mapping.rds",sep="")))
+  #write.spam(spam,file.path(ofolder,paste(hr,"-to-",lr,wkey,"_sum.spam",sep="")))
+  #saveRDS(spam2mapping(spam,rownames(cdata)), file.path(ofolder,paste(hr,"-to-",lr,wkey,"_mapping.rds",sep="")))
 
   return(list(
     x=mapping,

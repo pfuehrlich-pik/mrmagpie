@@ -4,7 +4,7 @@
 \alias{readWATERGAP}
 \title{readWATERGAP}
 \usage{
-readWATERGAP(subtype = "WATCH_IMAGE_WATERGAP")
+readWATERGAP(subtype = "WATCH_ISIMIP_WATERGAP")
 }
 \arguments{
 \item{subtype}{Data source to be read from}

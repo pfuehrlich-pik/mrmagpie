@@ -12,7 +12,6 @@
 #' @import madrat
 #' @import magclass
 #' @importFrom dplyr left_join
-#' @importFrom lucode path
 
 readSoilClassification <-
   function(subtype = "HWSD.soil") {
@@ -29,23 +28,18 @@ readSoilClassification <-
 
     }
 
-    if (dir.exists(path(folder))) {
-      files_list <- list.files(path(folder))
+    if (dir.exists(folder)) {
+      files_list <- list.files(folder)
       files <- c(soil = files_list[grep("soil", files_list)])
     } else {
-      stop(
-        paste(
-          "Path",
-          path(folder),
-          "does not exist. Check the defition of your
-          subtype or the folder structure you are trying to access."
-        )
+      stop(paste("Path", folder, "does not exist. Check the defition of your",
+          "subtype or the folder structure you are trying to access.")
       )
     }
 
     file_name <- toolSubtypeSelect(subtype, files)
 
-    sk <- file(path(folder, file_name), "rb")
+    sk <- file(file.path(folder, file_name), "rb")
     y <- readBin(sk, integer(), n = 67460, size = 1)
     close(sk)
     y = y[which(magclassdata$grid_67420_59199 == 1)]

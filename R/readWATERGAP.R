@@ -10,10 +10,10 @@
 #' @import madrat
 #' @import magclass
 
-readWATERGAP <- function(subtype="WATCH_IMAGE_WATERGAP"){
+readWATERGAP <- function(subtype="WATCH_ISIMIP_WATERGAP"){
 
   # Note to "WATCH_IMAGE_WATERGAP": old non-agricultural waterdemand data (will be deleted soon!)
-  if(subtype=="WATCH_IMAGE_WATERGAP"){
+  if(subtype=="WATCH_ISIMIP_WATERGAP"){
     # Non-agricultural water demands (withdrawals) from WATCH, ISIMIP and WATERGAP
       # A2: WATERGAP WATCH project; B1: WATERGAP WATCH project; SSP2: WATERGAP ISIMIP project
     x <- read.magpie(paste0(subtype,"/watdem_nonagr_0.5.mz"))
