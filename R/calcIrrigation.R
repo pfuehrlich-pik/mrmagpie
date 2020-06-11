@@ -18,6 +18,21 @@
 #'
 #' @importFrom magpiesets findset
 
+#### Rewrite this function!!!!
+### Get: crop water requirement (per crop) from LPJmL (e.g. NIR, blue water consumption, blue water transpiration?)
+  # blue water consumption: crop-specific and climate-specific and spatially explicit
+### Get: Field and conveyance efficiencies from literature (or: LPJmL)
+  # conveyance efficiency: irrigation-system-specific
+  # field efficiency: crop-specific and irrigation-system-specific
+
+### Calculations:
+# Withdrawal – Conveyance_losses – Field_losses = Consumption
+# Conveyance_lossess = Non_consumptive_conveyance_loss + consumptive_conveyance loss
+# Field_losses = Non_consumptive_field_loss + (Consumptive_field_loss + Blue_transpiration)
+
+### Report irrig_ww (irrigation water withdrawal) instead of airrig (water applied on field)
+
+
 calcIrrigation <- function(selectyears="all",
                            version="LPJmL5", climatetype="CRU_4", time="raw", averaging_range=NULL, dof=NULL,
                            harmonize_baseline=FALSE, ref_year=NULL){
