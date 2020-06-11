@@ -25,6 +25,7 @@ ref_year="y2015"
 monthly_discharge_magpie <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
                                        harmonize_baseline=FALSE,
                                        time="raw")
+yearly_discharge_magpie <- dimSums(monthly_discharge_magpie, dim=3)
 #monthly_discharge_magpie <- as.array(collapseNames(monthly_discharge_magpie))
 
 # Read in mrunoff
@@ -32,15 +33,17 @@ monthly_discharge_magpie <- calcOutput("LPJmL", version="LPJmL4", climatetype=cl
 monthly_runoff_magpie    <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mrunoff", aggregate=FALSE,
                                        harmonize_baseline=FALSE,
                                        time="raw")
+yearly_runoff_magpie <- dimSums(monthly_runoff_magpie, dim=3)
 #monthly_runoff_magpie    <- as.array(collapseNames(monthly_runoff_magpie))
 
 # Read in mevap
-### Monthly lake evapotranspiration (unit (after calcLPJmL): m^3/ha)
-monthly_evap_magpie    <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mevaporation", aggregate=FALSE,
-                                     harmonize_baseline=FALSE,
-                                     time="raw")
+### Monthly lake evapotranspiration (unit (after calcLPJmL): mio. m^3/ha)
+# Will be imported from LPJmL at later stage
+# For now: place-holder variable (set to 0)
+monthly_evap_magpie     <- monthly_runoff_magpie
+monthly_evap_magpie[,,] <- 0
 
-# Read in non-agricultural water consumption
+# Read in non-agricultural water consumption (mio. m^3/yr)
 nonag_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", seasonality="total", waterusetype="consumption", time="raw", calibration_approach="harmonizefunction", aggregate=FALSE)
 
 # Read in EFRs
@@ -65,7 +68,7 @@ EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype
 #########################################################
 
 
-# Read in non-agricultural water withdrawal
+# Read in non-agricultural water withdrawal (mio. m^3/yr)
 nonag_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", seasonality="total", waterusetype="withdrawal", time="raw", calibration_approach="harmonizefunction", aggregate=FALSE)
 
 

@@ -27,6 +27,8 @@
 #' \dontrun{ calcOutput("EnvmtlFlow", aggregate = FALSE) }
 #'
 
+### Note: Rewrite calcEnvmtlFlow so that it is only based on LPJmL discharge, not calcAvlWater (because calcAvlWater will be rewritten and being based on EFRs)
+
 calcEnvmtlFlow <- function(selectyears="all",
                            version="LPJmL4", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
                            harmonize_baseline=FALSE, ref_year="y2015",
