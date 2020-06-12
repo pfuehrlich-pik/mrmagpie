@@ -27,6 +27,11 @@ fullCELLULARMAGPIE <- function(rev=0.1, ctype="c200") {
     mag_years <- findset("time")
     short_years <- findset("t_all")
 
+    ### test settings (will be loaded from config in fina version)
+    climatetype="HadGEM2_ES:rcp2p6:co2"
+    harmonize_baseline="CRU_4"
+    ref_year="y2015"
+
     map <- calcOutput("Cluster", ctype=ctype, weight=NULL, aggregate=FALSE)
     toolStoreMapping(map,"clustermapping.csv",type="regional",error.existing = FALSE)
     setConfig(regionmapping = "clustermapping.csv")
@@ -100,10 +105,13 @@ fullCELLULARMAGPIE <- function(rev=0.1, ctype="c200") {
     calcOutput("NitrogenFixationRateNatural", aggregate=FALSE, round=6, file="f50_NitrogenFixationRateNatural_0.5.mz")
 
     #52 carbon
-    #CARBON!
+    calcOutput("Carbon", aggregate = FALSE, round=6, file="lpj_carbon_stocks_0.5.mz")
+    calcOutput("TopsoilCarbon", aggregate = FALSE, round=6, file="lpj_carbon_topsoil_0.5.mz")
+
 
     #59 som
     calcOutput("SOMinitialsiationPools", aggregate = FALSE, round=6, file="f59_som_initialisation_pools_0.5.mz")
+
 
     ## OTHER ##
     calcOutput("CalibratedArea", aggregate=FALSE, round=6, file="calibrated_area_0.5.mz" )

@@ -2,7 +2,7 @@
 #' @description Function extracts range-rarity as used for biodiversity loss
 #'
 #' @return magpie object in cellular resolution
-#' @author Michael Windisch, Patrick von Jeetze
+#' @author Michael Windisch, Patrick v. Jeetze
 #'
 #' @examples
 #' \dontrun{ calcOutput("RRLayer", aggregate = FALSE) }

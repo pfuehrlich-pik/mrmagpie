@@ -17,5 +17,5 @@ Function extracts range-rarity as used for biodiversity loss
 
 }
 \author{
-Michael Windisch, Patrick von Jeetze
+Michael Windisch, Patrick v. Jeetze
 }

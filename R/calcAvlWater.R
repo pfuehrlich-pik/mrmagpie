@@ -169,7 +169,7 @@ calcAvlWater <- function(selectyears="all",
     if(length(years_wat)>=length(years_grper)){
       years <- years_grper
     } else {
-      years <- years_watdem
+      years <- years_wat
     }
     rm(years_grper, years_wat)
 

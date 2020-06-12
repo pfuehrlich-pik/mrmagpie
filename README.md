@@ -1,6 +1,6 @@
 # madrat based MAgPIE Input Data Library
 
-R package **mrMAgPIE**, version **0.6.10**
+R package **mrmagpie**, version **0.7.0**
 
   
 
@@ -21,7 +21,7 @@ The additional repository can be made available permanently by adding the line a
 After that the most recent version of the package can be installed using `install.packages`:
 
 ```r 
-install.packages("mrMAgPIE")
+install.packages("mrmagpie")
 ```
 
 Package updates can be installed using `update.packages` (make sure that the additional repository has been added before running that command):
@@ -36,19 +36,19 @@ In case of questions / problems please contact Kristine Karstens <karstens@pik-p
 
 ## Citation
 
-To cite package **mrMAgPIE** in publications use:
+To cite package **mrmagpie** in publications use:
 
-Karstens K, Dietrich J, Chen D, Windisch M, Alves M, Beier F, Mishra A (2020). _mrMAgPIE: madrat based MAgPIE
-Input Data Library_. R package version 0.6.10.
+Karstens K, Dietrich J, Chen D, Windisch M, Alves M, Beier F, Mishra A (2020). _mrmagpie: madrat based MAgPIE Input
+Data Library_. R package version 0.7.0.
 
 A BibTeX entry for LaTeX users is
 
  ```latex
 @Manual{,
-  title = {mrMAgPIE: madrat based MAgPIE Input Data Library},
+  title = {mrmagpie: madrat based MAgPIE Input Data Library},
   author = {Kristine Karstens and Jan Philipp Dietrich and David Chen and Michael Windisch and Marcos Alves and Felicitas Beier and Abhijeet Mishra},
   year = {2020},
-  note = {R package version 0.6.10},
+  note = {R package version 0.7.0},
 }
 ```
 

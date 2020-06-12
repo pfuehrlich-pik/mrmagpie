@@ -5,12 +5,11 @@
 #' @param time Time smoothing: average, spline or raw (default)
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
-#' @param seasonality grper (default): non-agricultural water demand in growing period per year; total: non-agricultural water demand throughout the year
 #' @param waterusetype withdrawal (default) or consumption
+#' @param seasonality grper (default): non-agricultural water demand in growing period per year; total: non-agricultural water demand throughout the year
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4") for calcGrowingPeriod
 #' @param harmonize_baseline FALSE (default), if a baseline is specified here data is harmonized to that baseline (from ref_year onwards) for calcGrowingPeriod
 #' @param ref_year just specify for harmonize_baseline != FALSE : Reference year for calcGrowingPeriod
-#' @param calibration_approach calibration approach for water use historical to future harmonization: absolute, harmonizefunction (default)
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -23,9 +22,8 @@
 
 calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGAP",
                                  time="raw", averaging_range=NULL, dof=NULL,
-                                 seasonality="grper", waterusetype="withdrawal",
-                                 climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline="CRU_4", ref_year="y2015",
-                                 calibration_approach="harmonizefunction"){
+                                 waterusetype="withdrawal", seasonality="grper",
+                                 climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline="CRU_4", ref_year="y2015"){
 
   ########################################
   ############ Calculations  #############
@@ -66,35 +64,17 @@ calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGA
       watdem_nonagr_WATERGAP_adjusted <- watdem_nonagr_WATERGAP
       watdem_nonagr_WATERGAP_adjusted[,,] <- NA
 
-      # Absolute calibration:
-      if(calibration_approach=="absolute"){
-        transitionyear <- "y2005"
-        scenyears      <- getYears(watdem_nonagr_WATERGAP)
+      # Calibration of WATERGAP data to ISIMIP baseline:
+      # historical ISIMIP data in correct format for harmonization
+      cells <- getCells(watdem_nonagr_WATERGAP)
+      years <- getYears(watdem_nonagr_ISIMIP_hist)
+      names <- getNames(watdem_nonagr_WATERGAP)
+      tmp     <- new.magpie(cells,years,names)
+      tmp[,,] <- 1
+      tmp     <- tmp * watdem_nonagr_ISIMIP_hist
 
-        for(t in scenyears){
-          tmp_diff           <- watdem_nonagr_ISIMIP_hist[,transitionyear,] - watdem_nonagr_WATERGAP[,transitionyear,]
-          getYears(tmp_diff) <- getYears(watdem_nonagr_WATERGAP[,t,])
-          watdem_nonagr_WATERGAP_adjusted[,t,] <- watdem_nonagr_WATERGAP[,t,] + tmp_diff
-        }
-
-        # Set negative values to 0
-        watdem_nonagr_WATERGAP_adjusted <- toolConditionalReplace(watdem_nonagr_WATERGAP_adjusted, conditions = c("is.na()","<0"), replaceby = 0)
-
-      } else if(calibration_approach=="harmonizefunction"){
-        # historical ISIMIP data in correct format for harmonization
-        cells <- getCells(watdem_nonagr_WATERGAP)
-        years <- getYears(watdem_nonagr_ISIMIP_hist)
-        names <- getNames(watdem_nonagr_WATERGAP)
-        tmp     <- new.magpie(cells,years,names)
-        tmp[,,] <- 1
-        tmp     <- tmp * watdem_nonagr_ISIMIP_hist
-
-        # Harmonization
-        watdem_nonagr_WATERGAP_adjusted <- toolHarmonize2Baseline(x=watdem_nonagr_WATERGAP, base=tmp, ref_year="y2005", limited=TRUE, hard_cut=FALSE)
-
-      } else {
-        stop("Calibration argument is not supported")
-      }
+      # Harmonization
+      watdem_nonagr_WATERGAP_adjusted <- toolHarmonize2Baseline(x=watdem_nonagr_WATERGAP, base=tmp, ref_year="y2005", limited=TRUE, hard_cut=FALSE)
 
       # WATERGAP adjusted future scenario data
       watdem_nonagr[,getYears(watdem_nonagr_WATERGAP),getNames(watdem_nonagr_WATERGAP)] <- watdem_nonagr_WATERGAP_adjusted[,getYears(watdem_nonagr_WATERGAP),getNames(watdem_nonagr_WATERGAP)]
