@@ -20,6 +20,8 @@ harmonize_baseline="CRU_4"
 #ref_year="y2015"
 
 
+months <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
 # Read in mdischarge
 ### Monthly Discharge (unit (after calcLPJmL): mio. m^3/month)
 monthly_discharge_magpie <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
@@ -36,21 +38,28 @@ monthly_runoff_magpie    <- calcOutput("LPJmL", version="LPJmL4", climatetype=cl
 yearly_runoff_magpie <- dimSums(monthly_runoff_magpie, dim=3)
 #monthly_runoff_magpie    <- as.array(collapseNames(monthly_runoff_magpie))
 
+# Read in EFRs
+# (NOTE: The calculation currently still includes avl_water from calcAvlWater
+# --> needs to be replaced by calculation that is only based on discharge!!!)
+# Also: splined (due to current form of function)
+EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, harmonize_baseline=FALSE, time="spline", dof=dof, aggregate=FALSE, seasonality="monthly")
+EFR_magpie <- EFR_magpie[,"y2100",,invert=TRUE]
+
+
 # Read in mevap
 ### Monthly lake evapotranspiration (unit (after calcLPJmL): mio. m^3/ha)
 # Will be imported from LPJmL at later stage
 # For now: place-holder variable (set to 0)
 monthly_evap_magpie     <- monthly_runoff_magpie
 monthly_evap_magpie[,,] <- 0
+getNames(monthly_evap_magpie) <- months
 
 # Read in non-agricultural water consumption (mio. m^3/yr)
 nonag_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", seasonality="total", waterusetype="consumption", time="raw", aggregate=FALSE)
 
-# Read in EFRs
-# (NOTE: The calculation currently still includes avl_water from calcAvlWater
-# --> needs to be replaced by calculation that is only based on discharge!!!)
-# Also: splined (due to current form of function)
-EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, harmonize_baseline=FALSE, time="spline", dof=dof, aggregate=FALSE, seasonality="monthly")
+
+common_yrs <- intersect(getYears(monthly_runoff_magpie),getYears(nonag_wc_magpie))
+nonag_wc_magpie <- nonag_wc_magpie[,common_yrs,]
 
 
 ### River Routing
