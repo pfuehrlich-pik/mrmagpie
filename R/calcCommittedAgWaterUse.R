@@ -29,11 +29,13 @@ calcCommittedAgWaterUse <- function(selectyears="all",
   # NOTE: Currently: airrig as placeholder until replaced by efficiency calculation
   airrig <- calcOutput("Irrigation", version="LPJmL5", climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof)
 
-  # Read in area irrigated from land use initialization
-  area_irrigated <-
+  # Read in area irrigated from land use initialization (in mio. ha)
+  #area_irrigated <- calcOutput("AreaEquippedForIrrigation", aggregate=FALSE, cellular=TRUE, source="LUH2v2")
 
-  # Read in cropland area (by crop) from land use initialization
-  crops_grown <-
+
+  # Read in cropland area (by crop) from crop area initialization (in mio. ha)
+  crops_grown <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE)
+
 
 
   # Output: mio. m^3 of water used for irrigation (withdrawal) in each cell

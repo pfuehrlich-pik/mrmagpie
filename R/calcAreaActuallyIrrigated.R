@@ -2,7 +2,7 @@
 #' @description retrieves irrigated crop area from croparea intialization
 #'
 #' @param aggregationlevel default is iso
-#' @param selectyears select years
+#' @param selectyears years to be returned
 #'
 #' @return magpie object with results on cellular or iso country level
 #' @author Felicitas Beier
