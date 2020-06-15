@@ -1,5 +1,5 @@
 #' @title calcAvlWater
-#' @description This function calculates water availability for MAgPIE retrieved from LPJmL
+#' @description This function calculates water availability for MAgPIE retrieved from LPJmL using a river routing algorithm for distribution of discharge across the river basin
 #'
 #' @param version Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
@@ -9,28 +9,45 @@
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
 #' @param ref_year Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
-#' @param seasonality grper (default): water available in growing period per year; total: total water available throughout the year; monthly: monthly water availability (for further processing, e.g. in calcEnvmtlFlow)
 #'
 #' @import magclass
 #' @import madrat
 #'
 #' @return magpie object in cellular resolution
-#' @author Felicitas Beier, Kristine Karstens, Abhijeet Mishra
+#' @author Jens Heinke, Felicitas Beier
 #'
 #' @examples
 #' \dontrun{ calcOutput("AvlWater", aggregate = FALSE) }
 #'
 
 calcAvlWater <- function(selectyears="all",
-                         version="LPJmL4", climatetype="CRU_4", time="raw", averaging_range=NULL, dof=NULL,
-                         harmonize_baseline=FALSE, ref_year="y2015",
-                         seasonality="grper"){
+                         version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
+                         harmonize_baseline=FALSE, ref_year="y2015"){
+  ## Required inputs:
+  # Yearly runoff (mio. m^3 / yr) [smoothed]
+  monthly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mrunoff", aggregate=FALSE,
+                                        harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
+  yearly_runoff  <- dimSums(monthly_runoff_magpie, dim=3)
+  yearly_runoff    <- as.array(collapseNames(yearly_runoff))
 
-  ######################################################
-  ############ Water availability per cell #############
-  # Runoff is distributed across the river basin cells #
-  # based on discharge-weighted algorithm              #
-  ######################################################
+  # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
+  EFR <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE,
+             LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
+             EFRyears=c(1985:2015))
+  # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
+  lake_evap     <- new.magpie(1:59199,EFRyears)
+  lake_evap[,,] <- 0
+  #getNames(monthly_evap_magpie) <- months
+  # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
+  NAg_ww <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
+  # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
+  NAg_wc <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
+  # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
+  CAD <- calcCommittedAgWaterUse()
+
+
+
+
 
   if(harmonize_baseline==FALSE){
 

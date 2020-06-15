@@ -6,10 +6,6 @@
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
 #' @param waterusetype withdrawal (default) or consumption
-#' @param seasonality grper (default): non-agricultural water demand in growing period per year; total: non-agricultural water demand throughout the year
-#' @param climatetype Switch between different climate scenarios (default: "CRU_4") for calcGrowingPeriod
-#' @param harmonize_baseline FALSE (default), if a baseline is specified here data is harmonized to that baseline (from ref_year onwards) for calcGrowingPeriod
-#' @param ref_year just specify for harmonize_baseline != FALSE : Reference year for calcGrowingPeriod
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -22,12 +18,7 @@
 
 calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGAP",
                                  time="raw", averaging_range=NULL, dof=NULL,
-                                 waterusetype="withdrawal", seasonality="grper",
-                                 climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline="CRU_4", ref_year="y2015"){
-
-  ########################################
-  ############ Calculations  #############
-  #######################################
+                                 waterusetype="withdrawal"){
 
   # Old Non-Agricultural Waterdemand data (current default, will be deleted soon):
   if(source=="WATCH_ISIMIP_WATERGAP"){
@@ -84,9 +75,8 @@ calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGA
 
     } else {
       # Time smoothing:
-      x     <- calcOutput("NonAgWaterDemand", selectyears=selectyears, source=source, seasonality=seasonality,
-                          waterusetype=waterusetype, climatetype=climatetype, harmonize_baseline=harmonize_baseline,
-                          ref_year=ref_year, time="raw", averaging_range=NULL, dof=NULL, aggregate=FALSE)
+      x     <- calcOutput("NonAgWaterDemand", selectyears=selectyears, source=source,
+                          waterusetype=waterusetype, time="raw", averaging_range=NULL, dof=NULL, aggregate=FALSE)
 
       if(time=="average"){
         # Smoothing data through average:
@@ -106,41 +96,10 @@ calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGA
     }
   }
 
-  ###########################################
-  ############ Function Output  #############
-  ###########################################
+  # Select years to be returned
   if(selectyears!="all"){
     years         <- sort(findset(selectyears, noset="original"))
     watdem_nonagr <- watdem_nonagr[,years,]
-  }
-
-  ### Non-agricultural water demands in Growing Period
-  if(seasonality=="grper"){
-    # Get growing days per month
-    grow_days <- calcOutput("GrowingPeriod", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
-                            harmonize_baseline=harmonize_baseline, ref_year=ref_year, yield_ratio=0.1, aggregate=FALSE)
-    # Growing days per year
-    grow_days <- dimSums(grow_days,dim=3)
-
-    # Adjust years
-    years_watdem <- getYears(watdem_nonagr)
-    years_grper  <- getYears(grow_days)
-    if(length(years_watdem)>=length(years_grper)){
-      years <- years_grper
-    } else {
-      years <- years_watdem
-    }
-    rm(years_grper, years_watdem)
-
-    # Calculate non-agricultural water demand in growing period
-    out         <- watdem_nonagr[,years,]*grow_days[,years,]/365
-    description <- "Non-agricultural water demand (industry, electiricty, domestic) in growing period"
-  }
-
-  ### Total non-agricultural water demands per year
-  if(seasonality=="total"){
-    out         <- watdem_nonagr[,,]
-    description <- "Total non-agricultural water demand (industry, electiricty, domestic)"
   }
 
   # Check for NAs
@@ -149,9 +108,9 @@ calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGA
   }
 
   return(list(
-    x=out,
+    x=watdem_nonagr,
     weight=NULL,
     unit="mio. m^3",
-    description=description,
+    description="Total non-agricultural water demand (industry, electiricty, domestic)",
     isocountries=FALSE))
 }

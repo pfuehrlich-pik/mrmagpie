@@ -5,38 +5,20 @@
 \title{calcEnvmtlFlow}
 \usage{
 calcEnvmtlFlow(
-  selectyears = "all",
   version = "LPJmL4",
-  climatetype = "CRU_4",
-  time = "spline",
-  averaging_range = NULL,
-  dof = 4,
-  harmonize_baseline = FALSE,
-  ref_year = "y2015",
+  climatetype = "HadGEM2_ES:rcp2p6:co2",
   LFR_val = 0.1,
   HFR_LFR_less10 = 0.2,
   HFR_LFR_10_20 = 0.15,
   HFR_LFR_20_30 = 0.07,
   HFR_LFR_more30 = 0,
-  seasonality = "grper"
+  EFRyears = c(1961:2000)
 )
 }
 \arguments{
-\item{selectyears}{Years to be returned}
-
 \item{version}{Switch between LPJmL4 and LPJmL5}
 
 \item{climatetype}{Switch between different climate scenarios (default: "CRU_4")}
-
-\item{time}{Time smoothing: average or spline (default)}
-
-\item{averaging_range}{only specify if time=="average": number of time steps to average}
-
-\item{dof}{only specify if time=="spline": degrees of freedom needed for spline}
-
-\item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
-
-\item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 
 \item{LFR_val}{Strictness of environmental flow requirements}
 
@@ -48,18 +30,18 @@ calcEnvmtlFlow(
 
 \item{HFR_LFR_more30}{High flow requirements (share of total water for cells) with LFR>30percent of total water}
 
-\item{seasonality}{grper (default): EFR in growing period per year; total: EFR throughout the year; monthly: monthly EFRs}
+\item{EFRyears}{Long-term reference time frame for EFR calculation}
 }
 \value{
 magpie object in cellular resolution
 }
 \description{
-This function calculates environmental flow requirements (EFR) for MAgPIE retrieved from LPJmL monthly discharge and water availability
+This function calculates environmental flow requirements (EFR) for MAgPIE based on LPJmL monthly discharge following Smakthin et al. (2004)
 }
 \examples{
 \dontrun{ calcOutput("EnvmtlFlow", aggregate = FALSE) }
 
 }
 \author{
-Felicitas Beier, Abhijeet Mishra
+Felicitas Beier, Jens Heinke
 }

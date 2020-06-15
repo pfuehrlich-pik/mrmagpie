@@ -7,13 +7,12 @@
 calcAvlWater(
   selectyears = "all",
   version = "LPJmL4",
-  climatetype = "CRU_4",
+  climatetype = "HadGEM2_ES:rcp2p6:co2",
   time = "raw",
   averaging_range = NULL,
   dof = NULL,
   harmonize_baseline = FALSE,
-  ref_year = "y2015",
-  seasonality = "grper"
+  ref_year = "y2015"
 )
 }
 \arguments{
@@ -46,5 +45,5 @@ This function calculates water availability for MAgPIE retrieved from LPJmL
 
 }
 \author{
-Felicitas Beier, Kristine Karstens, Abhijeet Mishra
+Jens Heinke, Felicitas Beier
 }
