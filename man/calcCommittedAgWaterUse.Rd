@@ -5,46 +5,23 @@
 \title{calcCommittedAgWaterUse}
 \usage{
 calcCommittedAgWaterUse(
-  selectyears = paste0("y", 1961:2000),
-  version = "LPJmL4",
-  climatetype = "CRU_4",
+  version = "LPJmL5",
+  climatetype = "HadGEM2_ES:rcp2p6:co2",
   time = "spline",
-  LFR_val = 0.1,
-  HFR_LFR_less10 = 0.2,
-  HFR_LFR_10_20 = 0.15,
-  HFR_LFR_20_30 = 0.07,
-  HFR_LFR_more30 = 0,
-  EFR_years = ""
+  dof = 4,
+  averaging_range = NULL
 )
 }
 \arguments{
-\item{selectyears}{Years to be returned}
-
 \item{version}{Switch between LPJmL4 and LPJmL5}
 
 \item{climatetype}{Switch between different climate scenarios (default: "CRU_4")}
 
 \item{time}{Time smoothing: average or spline (default)}
 
-\item{LFR_val}{Strictness of environmental flow requirements}
-
-\item{HFR_LFR_less10}{High flow requirements (share of total water for cells) with LFR<10percent of total water}
-
-\item{HFR_LFR_10_20}{High flow requirements (share of total water for cells) with 10percent < LFR < 20percent of total water}
-
-\item{HFR_LFR_20_30}{High flow requirements (share of total water for cells) with 20percent < LFR < 30percent of total water}
-
-\item{HFR_LFR_more30}{High flow requirements (share of total water for cells) with LFR>30percent of total water}
-
-\item{averaging_range}{only specify if time=="average": number of time steps to average}
-
 \item{dof}{only specify if time=="spline": degrees of freedom needed for spline}
 
-\item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
-
-\item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
-
-\item{seasonality}{grper (default): EFR in growing period per year; total: EFR throughout the year; monthly: monthly EFRs}
+\item{averaging_range}{only specify if time=="average": number of time steps to average}
 }
 \value{
 magpie object in cellular resolution
@@ -53,7 +30,7 @@ magpie object in cellular resolution
 This function calculates committed agricultural water uses that are used in the river routing algorithm for distributing available water across the basin
 }
 \examples{
-\dontrun{ calcOutput("EnvmtlFlow", aggregate = FALSE) }
+\dontrun{ calcOutput("CommittedAgWaterUse", aggregate = FALSE) }
 
 }
 \author{

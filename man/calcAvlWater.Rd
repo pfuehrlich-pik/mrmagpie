@@ -31,14 +31,12 @@ calcAvlWater(
 \item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
-
-\item{seasonality}{grper (default): water available in growing period per year; total: total water available throughout the year; monthly: monthly water availability (for further processing, e.g. in calcEnvmtlFlow)}
 }
 \value{
 magpie object in cellular resolution
 }
 \description{
-This function calculates water availability for MAgPIE retrieved from LPJmL
+This function calculates water availability for MAgPIE retrieved from LPJmL using a river routing algorithm for distribution of discharge across the river basin
 }
 \examples{
 \dontrun{ calcOutput("AvlWater", aggregate = FALSE) }

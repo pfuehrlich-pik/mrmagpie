@@ -29,10 +29,8 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
   EFRyears <- paste0("y",EFRyears)
 
   ### Monthly Discharge from LPJmL
-  monthly_discharge_magpie <- calcOutput("LPJmL", selectyears="all", version=version, climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
-                                         harmonize_baseline=FALSE, time="raw")    #### Replace "all" in selectyears with EFRyears here (ask Kristine about argument specification)
-  # Monthly discharge for relevant years
-  monthly_discharge_magpie <- monthly_discharge_magpie[,EFRyears,]
+  monthly_discharge_magpie <- calcOutput("LPJmL", selectyears=EFRyears, version=version, climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
+                                         harmonize_baseline=FALSE, time="raw")
 
   # Extract years
   years <- getYears(monthly_discharge_magpie, as.integer = TRUE)
@@ -51,7 +49,6 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
 
   ### Mean annual discharge
   mean_annual_discharge <- apply(monthly_discharge_magpie, MARGIN=c(1), sum)/length(years)
-
 
   ### Calculate HFR
   ## Note: "For rivers with low Q90 values, high-flow events are important

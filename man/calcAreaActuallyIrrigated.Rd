@@ -9,7 +9,7 @@ calcAreaActuallyIrrigated(aggregationlevel = "iso", selectyears = "y1995")
 \arguments{
 \item{aggregationlevel}{default is iso}
 
-\item{selectyears}{select years}
+\item{selectyears}{years to be returned}
 }
 \value{
 magpie object with results on cellular or iso country level

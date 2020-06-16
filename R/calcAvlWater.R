@@ -27,27 +27,129 @@ calcAvlWater <- function(selectyears="all",
   # Yearly runoff (mio. m^3 / yr) [smoothed]
   monthly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="mrunoff", aggregate=FALSE,
                                         harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
-  yearly_runoff  <- dimSums(monthly_runoff_magpie, dim=3)
-  yearly_runoff    <- as.array(collapseNames(yearly_runoff))
+  yearly_runoff  <- dimSums(monthly_runoff, dim=3)
+  yearly_runoff  <- as.array(collapseNames(yearly_runoff))
+  years <- getYears(monthly_runoff)
 
   # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
   EFR <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE,
              LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
              EFRyears=c(1985:2015))
+
   # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
-  lake_evap     <- new.magpie(1:59199,EFRyears)
+  lake_evap     <- new.magpie(1:59199,years)
   lake_evap[,,] <- 0
-  #getNames(monthly_evap_magpie) <- months
+
+  # Renewable groundwater (in mio. m^3/ha) [place holder]
+  ren_gw     <- new.magpie(1:59199,years)
+  ren_gw[,,] <- 0
+
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
+
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
   NAg_wc <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
+
   # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
-  CAD <- calcCommittedAgWaterUse()
+  CAD <- calcOutput("CommittedAgWaterUse",aggregate=FALSE)
 
 
 
 
+  ### Rivers from Jens
+
+  rm(list=ls(all=TRUE))
+  gc()
+
+  NCELL <- 67420
+  NCRUCELL <- 67420
+
+
+  zz <- file("/data/biosx/LPJ/input_longheader/drainage.bin","rb")
+  seek(zz,where=43,origin="start")
+  x <- readBin(zz, integer(), n=2*NCRUCELL, size=4)
+  nextcell <- x[c(1:NCRUCELL)*2-1]
+  dist <- x[c(1:NCRUCELL)*2]
+  close(zz)
+
+  nextcell[which(nextcell<0)] <- -1
+  nextcell[which(nextcell>=0)] <- nextcell[which(nextcell>=0)] + 1
+
+  # determine downstream cell list
+  dummy <- array(data=-9999,dim=c(NCRUCELL))
+  c <- 1
+  i <- 1
+  dummy[i] <- nextcell[c]
+  while(dummy[i]>0)
+  {
+   i <- i + 1
+   dummy[i] <- nextcell[dummy[i-1]]
+  }
+  dsclist <- list(dummy[0:(i-1)])
+
+  for(c in 2:NCRUCELL)
+  {
+   dummy[] <- -9999
+   i <- 1
+   dummy[i] <- nextcell[c]
+   while(dummy[i]>0)
+   {
+     i <- i + 1
+     dummy[i] <- nextcell[dummy[i-1]]
+   }
+   dsclist[[length(dsclist)+1]] <- dummy[0:(i-1)]
+  }
+
+  # determine endcell and dictance to endcell
+  cellstoend <- array(data=0,dim=c(NCRUCELL))
+  endcell <- array(data=0,dim=c(NCRUCELL))
+  for(i in 1:NCRUCELL)
+  {
+   endcell[i] <- i
+   while(nextcell[endcell[i]]>0)
+   {
+     endcell[i] <- nextcell[endcell[i]]
+     cellstoend[i] <- cellstoend[i] + 1
+   }
+  }
+
+  # determine calcorder
+  basinids <- unique(endcell)
+  calcorder <- array(data=0,dim=c(NCRUCELL))
+  for(b in 1:length(basinids))
+  {
+    basincells <- which(endcell==basinids[b])
+    calcorder[basincells] <- (cellstoend[basincells] - max(cellstoend[basincells]) - 1)*(-1)
+  }
+
+  # determine upstream cell list
+  usclist <- list()
+  for(c in 1:NCRUCELL)
+  {
+    if(c%%1000 == 0) print(c)
+    basincells <- which(endcell==endcell[c])
+    dummy <- numeric()
+    for(cell in basincells)
+    {
+      if(is.element(c,dsclist[[cell]])) dummy <- c(dummy,cell)
+    }
+    usclist[[c]] <- dummy
+  }
+
+  #save(nextcell,dsclist,usclist,endcell,calcorder,file="/data/open/Jens/WaterCC/analysis/river_routing.RData")
+
+
+  # River basin information
+   basin_code <- toolGetMapping("rivermapping.csv",type="cell")
+  # basin_code <- basin_code$basincode
+  #
+  #
+  #
+
+
+
+#####################################################
+  #### Old function
 
   if(harmonize_baseline==FALSE){
 
