@@ -18,9 +18,9 @@
 readGCMClimate <-
   function(subtype = "GCMClimate:rcp85:HadGEM2.temperature") {
     if (grepl("\\.", subtype) & grepl("\\:", subtype)) {
-      subtype     <- strsplit(gsub(":", "/" , subtype), split = "\\.")
-      folder      <- unlist(subtype)[1]
-      subtype     <- unlist(subtype)[2]
+      type     <- strsplit(gsub(":", "/" , subtype), split = "\\.")
+      folder      <- unlist(type)[1]
+      subtype     <- unlist(type)[2]
 
     } else {
 
@@ -54,7 +54,8 @@ readGCMClimate <-
 
       x <- collapseNames(as.magpie(x))
       x <- x / 12
-      getNames(x) <- subtype
+      col_name <-  unlist(strsplit(unlist(type)[1], split = "\\/"))[c(1,2)]
+      getNames(x) <- paste(subtype,col_name[1],col_name[2], sep = "_")
 
     } else if (subtype %in% c("longwave_radiation", "shortwave_radiation")) {
       x <- read.LPJ_input(file_name = paste0(folder, "/", file_name),
@@ -62,7 +63,8 @@ readGCMClimate <-
                           namesum = TRUE)
       x <- collapseNames(as.magpie(x))
       x <- x / 365
-      getNames(x) <- subtype
+      col_name <-  unlist(strsplit(unlist(type)[1], split = "\\/"))[c(1,2)]
+      getNames(x) <- paste(subtype,col_name[1],col_name[2], sep = "_")
 
     } else {
       stop(paste0("subtype ", subtype, " is not existing"))
@@ -71,4 +73,3 @@ readGCMClimate <-
     return(x)
 
   }
-

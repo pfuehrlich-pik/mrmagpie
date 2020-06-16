@@ -37,7 +37,7 @@ readCO2Atmosphere <-
     }
 
     x  <- clean_magpie(collapseNames(as.magpie(x, spatial = 1)))
-    getNames(x) <- subtype
+    getNames(x) <- paste("CO2ATMconcentration",subtype, sep = "_")
     getCells(x) <- "GLO"
 
     return(x)

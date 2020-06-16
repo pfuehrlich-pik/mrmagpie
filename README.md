@@ -1,6 +1,6 @@
 # madrat based MAgPIE Input Data Library
 
-R package **mrmagpie**, version **0.7.0**
+R package **mrmagpie**, version **0.7.1**
 
   
 
@@ -38,8 +38,8 @@ In case of questions / problems please contact Kristine Karstens <karstens@pik-p
 
 To cite package **mrmagpie** in publications use:
 
-Karstens K, Dietrich J, Chen D, Windisch M, Alves M, Beier F, Mishra A (2020). _mrmagpie: madrat based MAgPIE Input
-Data Library_. R package version 0.7.0.
+Karstens K, Dietrich J, Chen D, Windisch M, Alves M, Beier F, Mishra A (2020). _mrmagpie: madrat
+based MAgPIE Input Data Library_. R package version 0.7.1.
 
 A BibTeX entry for LaTeX users is
 
@@ -48,7 +48,7 @@ A BibTeX entry for LaTeX users is
   title = {mrmagpie: madrat based MAgPIE Input Data Library},
   author = {Kristine Karstens and Jan Philipp Dietrich and David Chen and Michael Windisch and Marcos Alves and Felicitas Beier and Abhijeet Mishra},
   year = {2020},
-  note = {R package version 0.7.0},
+  note = {R package version 0.7.1},
 }
 ```
 

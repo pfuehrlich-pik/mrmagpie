@@ -23,9 +23,10 @@ calcSoilCharacteristics <- function() {
     z[, i, ] <- x@.Data[, 1,1]
   }
 
+  soil_char <- toolGetMapping(name = "mappingSoil.csv", type = "sectoral")
   w = array(NA, dim = c(dim(x)[1], length(years), dim(soil_char[, -1])[2]),
             dimnames = list(1:dim(x)[1], years, dimnames(soil_char[, -1])[[2]]))
-  soil_char <- toolGetMapping(name = "mappingSoil.csv", type = "sectoral")
+
   for (i in 1:length(years)) {
     y           <- as.data.frame(z@.Data[, i, ])
     colnames(y) <- "soil"
