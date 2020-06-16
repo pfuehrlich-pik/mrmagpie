@@ -45,8 +45,11 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", climatetype="HadGEM2_ES:rc
   crops_grown <- collapseNames(crops_grown[,,"irrigated"])
 
   ## For now: delete pasture from airrig (later: add pasture area)
-  airrig <- airrig[,,"pasture",invert=T]
-  #land_area <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE)
+  #airrig <- airrig[,,"pasture",invert=T]
+  land_area <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE)
+  land_area <- land_area[,"y1995",]
+
+
 
   # Committed agricultural uses (in mio. m^3 per year) [in initialization year]
   CAU <- airrig * crops_grown
