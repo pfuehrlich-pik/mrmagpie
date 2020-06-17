@@ -24,36 +24,43 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
   lpjml_years  <- findset("time")[as.numeric(substring(findset("time"),2))<2099]
 
   soilc_natveg <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="soilc",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   vegc_natveg  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="vegc",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   litc_natveg  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="litc",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   natveg       <- mbind(litc_natveg, vegc_natveg, soilc_natveg)
 
   soilc_grass  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="soilc_grass",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   vegc_grass   <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="vegc_grass",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   litc_grass   <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="litc_grass",
-                              time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE, years=lpjml_years)
 
   grass        <- mbind(litc_grass, vegc_grass, soilc_grass)
 
   topsoilc     <- calcOutput("TopsoilCarbon", version=version, climatetype=climatetype,
-                             time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                             aggregate=FALSE, years=lpjml_years)
+                              averaging_range=averaging_range, time=time, dof=dof,
+                              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+                              aggregate=FALSE, years=lpjml_years)
   #find cshare
   cshare_released <- 0.5
 

@@ -24,7 +24,7 @@ calcTopsoilCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw",
 
   soilc_layer_natveg <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="soilc_layer",
                               time=time, dof=dof, harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              averaging_range=averaging_range,aggregate=FALSE, years=lpjml_years)
   topsoilc           <- soilc_layer_natveg[,,1] + 1/3 * soilc_layer_natveg[,,2]
   getNames(topsoilc) <- "topsoilc"
 

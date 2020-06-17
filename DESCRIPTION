@@ -1,14 +1,15 @@
 Package: mrmagpie
 Type: Package
 Title: madrat based MAgPIE Input Data Library
-Version: 0.7.1
+Version: 0.7.1.9001
 Date: 2020-06-16
-Authors@R: c(person("Kristine", "Karstens", email = "karstens@pik-potsdam.de", role = c("aut","cre")), 
+Authors@R: c(person("Kristine", "Karstens", email = "karstens@pik-potsdam.de", role = c("aut","cre")),
              person("Jan Philipp", "Dietrich", email = "dietrich@pik-potsdam.de", role = "aut"),
              person("David", "Chen", role = "aut"),
              person("Michael", "Windisch", role = "aut"),
              person("Marcos", "Alves", role = "aut"),
-             person("Felicitas", "Beier", email = "beier@pik-potsdam.de", role = "aut"), 
+             person("Felicitas", "Beier", email = "beier@pik-potsdam.de", role = "aut"),
+             person("Patrick", "v. Jeetze", email = "vjeetze@pik-potsdam.de", role = "aut"),
              person("Abhijeet", "Mishra", email = "mishra@pik-potsdam.de", role = "aut"))
 Description: Provides functions for MAgPIE country and cellular input data generation.
 Depends:
@@ -30,7 +31,7 @@ License: LGPL-3 | file LICENSE
 LazyData: no
 Encoding: UTF-8
 RoxygenNote: 7.1.0
-ValidationKey: 1308459
+ValidationKey: 13250469429
 Suggests: knitr,
           rmarkdown
 VignetteBuilder: knitr
