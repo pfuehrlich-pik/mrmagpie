@@ -37,6 +37,7 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", iniyear=1995, climatetype=
 
   ## Committed agricultural uses (in mio. m^3 per year) [in initialization year]
   CAU <- airrig * crops_grown
+  CAU <- dimSums(CAU,dim=3)
 
   return(list(
     x=CAU,
