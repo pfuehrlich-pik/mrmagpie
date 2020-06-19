@@ -7,9 +7,9 @@
 calcYields(
   version = "LPJmL5",
   climatetype = "CRU_4",
-  time = "raw",
+  time = "spline",
   averaging_range = NULL,
-  dof = NULL,
+  dof = 4,
   harmonize_baseline = FALSE,
   ref_year = "y2015",
   calib_proxy = TRUE,

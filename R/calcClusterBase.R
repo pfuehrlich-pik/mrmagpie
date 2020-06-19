@@ -12,12 +12,9 @@ calcClusterBase <- function(years2use=1995) {
 
   d <- list()
   # read in data which should be used to determine cluster
-  #d$yld    <- calcOutput("MAgPIEYields",aggregate=FALSE)[,years2use,]
-  #d$airrig <- calcOutput("MAgPIEAirrig",aggregate=FALSE)[,years2use,]
-  #d$td     <- calcOutput("TransportDistance", aggregate=FALSE)[,,rep(1,16)]
-  d$yld    <- read.magpie("/home/dietrich/Modelling/tmp/test/isimip_rcp-IPSL_CM5A_LR-rcp2p6-co2_rev43_0.5/lpj_yields_0.5.mz")[,years2use,]
-  d$airrig <- read.magpie("/home/dietrich/Modelling/tmp/test/isimip_rcp-IPSL_CM5A_LR-rcp2p6-co2_rev43_0.5/lpj_airrig_0.5.mz")[,years2use,]
-  d$td     <- read.magpie("/home/dietrich/Modelling/tmp/test/isimip_rcp-IPSL_CM5A_LR-rcp2p6-co2_rev43_0.5/transport_distance_0.5.mz")[,,rep(1,16)]
+  d$yld    <- calcOutput("Yields", selectyears=years2use, aggregate=FALSE)
+  d$airrig <- calcOutput("Irrigation", selectyears=years2use, aggregate=FALSE)
+  d$td     <- calcOutput("TransportDistance", aggregate=FALSE)[,,rep(1,16)]
 
   cdata <- do.call(cbind,lapply(d,wrap,list(1,c(2,3))))
   cdata <- scale(cdata)
