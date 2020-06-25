@@ -23,10 +23,16 @@
 calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
                          harmonize_baseline=FALSE, ref_year="y2015"){
-  load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/river_routing_stn.RData")
+
   load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
 
-
+  ### Read in river structure
+  # Note: river structure derived from LPJmL input (drainage), see: "..."
+  data <- toolGetMapping("River_structure.rda",type="cell")
+  for (i in 1:length(data)){
+    assign(paste(names(data[[i]])), data[[i]])
+  }
+  rm(data,i)
 
 
   ## Required inputs:
@@ -87,7 +93,7 @@ calcAvlWater <- function(selectyears="all",
     test <- numeric(NCELLS)
 
     for (c in 1:NCELLS){
-      discharge_nat[c] <- sum(runoff[c(usclist[[c]],c)]) - sum(lake_evap[c(usclist[[c]],c)])
+      discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)]) - sum(lake_evap[c(upstreamcells[[c]],c)])
     }
 
 
@@ -105,99 +111,6 @@ calcAvlWater <- function(selectyears="all",
   }
 
 
-
-
-
-  ### Rivers from Jens
-
- # rm(list=ls(all=TRUE))
-  #gc()
-#
-#   NCELL <- 67420
-#   NCRUCELL <- 67420
-#
-#
-#   zz <- file("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/drainagestn.bin","rb")
-#   seek(zz,where=43,origin="start")
-#   x <- readBin(zz, integer(), n=2*NCRUCELL, size=4)
-#   nextcell <- x[c(1:NCRUCELL)*2-1]
-#   dist <- x[c(1:NCRUCELL)*2]
-#   close(zz)
-#
-#   nextcell[which(nextcell<0)] <- -1
-#   nextcell[which(nextcell>=0)] <- nextcell[which(nextcell>=0)] + 1
-#
-#   # determine downstream cell list
-#   dummy <- array(data=-9999,dim=c(NCRUCELL))
-#   c <- 1
-#   i <- 1
-#   dummy[i] <- nextcell[c]
-#   while(dummy[i]>0)
-#   {
-#    i <- i + 1
-#    dummy[i] <- nextcell[dummy[i-1]]
-#   }
-#   dsclist <- list(dummy[0:(i-1)])
-#
-#   for(c in 2:NCRUCELL)
-#   {
-#    dummy[] <- -9999
-#    i <- 1
-#    dummy[i] <- nextcell[c]
-#    while(dummy[i]>0)
-#    {
-#      i <- i + 1
-#      dummy[i] <- nextcell[dummy[i-1]]
-#    }
-#    dsclist[[length(dsclist)+1]] <- dummy[0:(i-1)]
-#   }
-#
-#   # determine endcell and distance to endcell
-#   cellstoend <- array(data=0,dim=c(NCRUCELL))
-#   endcell <- array(data=0,dim=c(NCRUCELL))
-#   for(i in 1:NCRUCELL)
-#   {
-#    endcell[i] <- i
-#    while(nextcell[endcell[i]]>0)
-#    {
-#      endcell[i] <- nextcell[endcell[i]]
-#      cellstoend[i] <- cellstoend[i] + 1
-#    }
-#   }
-#
-#   # determine calcorder
-#   basinids <- unique(endcell)
-#   calcorder <- array(data=0,dim=c(NCRUCELL))
-#   for(b in 1:length(basinids))
-#   {
-#     basincells <- which(endcell==basinids[b])
-#     calcorder[basincells] <- (cellstoend[basincells] - max(cellstoend[basincells]) - 1)*(-1)
-#   }
-#
-#   # determine upstream cell list
-#   usclist <- list()
-#   for(c in 1:NCRUCELL)
-#   {
-#     if(c%%1000 == 0) print(c)
-#     basincells <- which(endcell==endcell[c])
-#     dummy <- numeric()
-#     for(cell in basincells)
-#     {
-#       if(is.element(c,dsclist[[cell]])) dummy <- c(dummy,cell)
-#     }
-#     usclist[[c]] <- dummy
-#   }
-#
-#   #save(nextcell,dsclist,usclist,endcell,calcorder,file="/data/open/Jens/WaterCC/analysis/river_routing.RData")
-#
-#
-# ################# River Routing
-#
-#
-#
-#
-#
-#
 
 
 
