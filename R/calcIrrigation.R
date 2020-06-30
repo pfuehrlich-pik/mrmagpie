@@ -40,12 +40,10 @@ calcIrrigation <- function(selectyears="all",
   if(harmonize_baseline==FALSE){
 
     if(time=="raw"){
-      # Read in airrig:
-      lpj_airrig <- calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="irrig", aggregate=FALSE,
+      # Read in airrig (irrigation water applied additionally to rainfall where irrigation takes place):
+      lpj_airrig <- collapseNames(calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="irrig", aggregate=FALSE,
                                                                  harmonize_baseline=FALSE,
-                                                                 time="raw")
-      # Note: airrig: irrigation water applied additionally to rainfall where irrigation takes place
-      # --> dimension has irrigated and rainfed, but rainfed=0
+                                                                 time="raw")[,,"irrigated"])
 
       # Load LPJmL to MAgPIE mapping to aggregate to MAgPIE crops
       LPJ2MAG      <- toolGetMapping( "MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
@@ -102,9 +100,11 @@ calcIrrigation <- function(selectyears="all",
     stop("produced NA airrig")
   }
 
+  crop_area_weight <- collapseNames(calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE, years="y1995", round=6)[,,"irrigated"])
+
   return(list(
     x=mag_airrig,
-    weight=NULL,
+    weight=crop_area_weight,
     unit="m^3 per ha per yr",
     description="Irrigation water (water applied in addition to rainfall) for different crop types following LPJmL irrigation system assumptions",
     isocountries=FALSE))

@@ -25,6 +25,10 @@
 calcYields <- function(version="LPJmL5", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
                        harmonize_baseline=FALSE, ref_year="y2015", calib_proxy=TRUE, split_cropcalc=TRUE, selectyears="all"){
 
+  sizelimit <- getOption("magclass_sizeLimit")
+  options(magclass_sizeLimit=1e+10)
+  on.exit(options(magclass_sizeLimit=sizelimit))
+
   LPJ2MAG      <- toolGetMapping( "MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
 
   if(split_cropcalc){

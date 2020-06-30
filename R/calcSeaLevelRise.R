@@ -22,10 +22,11 @@ p <- new.magpie(cells_and_regions = dimnames(slr)[[1]], years=past, names="perce
 slr <- mbind(p,slr)
 slr <- toolHoldConstantBeyondEnd(slr)
 
+weight <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6)
 
 return(list(
   x=slr,
-  weight=NULL,
+  weight=weight,
   unit="percentage land lost",
   isocountries=FALSE,
   description="Percentage of Land Lost to Sea Level Rise"))

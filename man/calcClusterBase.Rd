@@ -4,11 +4,7 @@
 \alias{calcClusterBase}
 \title{calcClusterBase}
 \usage{
-calcClusterBase(years2use = 1995)
-}
-\arguments{
-\item{years2use}{A vector with years with should be taken into account for
-the clustering}
+calcClusterBase()
 }
 \value{
 A matrix containing the data

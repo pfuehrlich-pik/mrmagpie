@@ -4,15 +4,32 @@
 \alias{fullCELLULARMAGPIE}
 \title{fullCELLULARMAGPIE}
 \usage{
-fullCELLULARMAGPIE(rev = 0.1, ctype = "c200")
+fullCELLULARMAGPIE(
+  rev = 0.1,
+  dev = "",
+  ctype = "c200",
+  climatetype = "HadGEM2_ES:rcp2p6:co2",
+  clusterweight = NULL
+)
 }
 \arguments{
 \item{rev}{data revision which should be used as input (positive numeric).}
 
+\item{dev}{development suffix to distinguish development versions for the same data revision. This can be useful to distinguish
+parallel lines of development.}
+
 \item{ctype}{aggregation clustering type, which is a combination of a single letter, indicating the cluster methodology, and a number,
 indicating the number of resulting clusters. Available methodologies are hierarchical clustering (h), normalized k-means clustering
 (n) and combined hierarchical/normalized k-means clustering (c). In the latter hierarchical clustering is used to determine the
-cluster distribution among regions whereas normalized k-means is used for the clustering within a region.
+cluster distribution among regions whereas normalized k-means is used for the clustering within a region.}
+
+\item{climatetype}{climate change scenario to be used}
+
+\item{clusterweight}{Should specific regions be resolved with more or less detail? Values > 1 mean higher share, < 1 lower share
+e.g. cfg$clusterweight <- c(LAM=2) means that a higher level of detail for region LAM if set to NULL all weights will be assumed to be 1.
+examples:
+c(LAM=1.5,SSA=1.5,OAS=1.5)
+c(LAM=2,SSA=2,OAS=2)
 \code{\link{setConfig}} (e.g. for setting the mainfolder if not already set
 properly).}
 }

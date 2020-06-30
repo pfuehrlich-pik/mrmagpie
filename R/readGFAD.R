@@ -17,10 +17,11 @@
 readGFAD <- function(){
   poulter_data <- "GFAD_V1-1.nc"
   #poulter_data <- "C:/PIK/data_processing/inputdata/sources/GFAD/GFAD_V1-1.nc"
+  #poulter_data <- "/p/projects/rd3mod/inputdata/sources/GFAD/GFAD_V1-1.nc"
+
   gfad <- nc_open(poulter_data)
 
   mapping   <- toolGetMapping(type="cell",name="CountryToCellMapping.csv")
-  #load("C:/PIK/data_processing/mrMAgPIE/R/sysdata.rda")
 
   lon <- ncvar_get(gfad,"lon")
   lat <- ncvar_get(gfad,"lat")

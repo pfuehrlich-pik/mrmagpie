@@ -18,7 +18,7 @@ calcAgeClassDistribution <- function(){
   lat <- mapping$lat
 
   cb <- as.data.frame(magpie_coord)
-  cell_area  <- (111e3*0.5)*(111e3*0.5)*cos(cb$ylat/180*pi)
+  cell_area  <- (111e3*0.5)*(111e3*0.5)*cos(cb$lat/180*pi)
 
   cell_area <- as.data.frame(cell_area)
   cell_area$cell <- mapping$cell
@@ -47,10 +47,16 @@ calcAgeClassDistribution <- function(){
 
   out <- ac_distribution
 
+  getCells(out) <- mapping$celliso
+
+  names(dimnames(out))[1] <- "ISO.cell"
+
+  weight <- setCells(cell_area_magpie,mapping$celliso)
+
   return(list(
     x=out,
-    weight=NULL,
-    unit="",
+    weight=weight,
+    unit="1",
     description="Fraction of each age class in secondary forest from each spatially explicit cell",
     isocountries=FALSE))
 }
