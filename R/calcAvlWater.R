@@ -24,48 +24,70 @@ calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
                          harmonize_baseline=FALSE, ref_year="y2015"){
 
-  load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
+  #############################
+  ####### Read in Data ########
+  #############################
 
   ### Read in river structure
-  # Note: river structure derived from LPJmL input (drainage), see: "..."
+  # Note: river structure derived from LPJmL input (drainage) [Later: implement readDrainage function]
   data <- toolGetMapping("River_structure.rda",type="cell")
   for (i in 1:length(data)){
     assign(paste(names(data[[i]])), data[[i]])
   }
   rm(data,i)
 
+  ### LPJ-MAgPIE cell mapping
+  #load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
+  ### Question: Use LPJ_input.Index or LPJ.Index? What is the difference?
+  magpie2lpj <- magclassdata$cellbelongings$LPJ_input.Index
 
-  ## Required inputs:
+  ### Required inputs:
   # Yearly runoff (mio. m^3 / yr) [smoothed]
-  yearly_runoff_magpie <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="runoff", aggregate=FALSE,
+  yearly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="runoff_lpjcell", aggregate=FALSE,
                                         harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
-  yearly_runoff_magpie  <- as.array(collapseNames(yearly_runoff_magpie))
-  years <- getYears(monthly_runoff_magpie)
+  yearly_runoff <- as.array(collapseNames(yearly_runoff))
+  years <- getYears(yearly_runoff)
 
   # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
-  EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE,
+  EFR <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
              LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
              EFRyears=c(1985:2015))
-  EFR_magpie <- as.array(collapseNames(EFR_magpie))
+  EFR <- as.array(collapseNames(EFR))
 
   # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
-  lake_evap_magpie <- new.magpie(1:59199,years)
-  lake_evap_magpie[,,] <- 0
+  lake_evap     <- new.magpie(1:67420,years)
+  lake_evap[,,] <- 0
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
-  NAg_ww_magpie <- as.array(collapseNames(NAg_ww_magpie))
+  NAg_ww     <- new.magpie(1:67420,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
+  NAg_ww[,,] <- 0
+  NAg_ww[magclassdata$cellbelongings$LPJ.Index,,] <- NAg_ww_magpie[,,]
+  NAg_ww     <- as.array(collapseNames(NAg_ww))
+  rm(NAg_ww_magpie)
 
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
   NAg_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
-  NAg_wc_magpie <- as.array(collapseNames(NAg_wc_magpie))
+  NAg_wc     <- new.magpie(1:67420,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
+  NAg_wc[,,] <- 0
+  NAg_wc[magclassdata$cellbelongings$LPJ.Index,,] <- NAg_wc_magpie[,,]
+  NAg_wc     <- as.array(collapseNames(NAg_wc))
+  rm(NAg_wc_magpie)
+
+
+
+
+
+
+
 
   # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
   CAD_magpie <- calcOutput("CommittedAgWaterUse",aggregate=FALSE)
   CAD_magpie <- as.array(collapseNames(CAD_magpie))
 
-
-  #### River routing
+  #############################
+  ####### River routing #######
+  #############################
 
   EFR <- numeric(length(calcorder))
   EFR[magpie2lpj] <- EFR_magpie
@@ -81,11 +103,6 @@ calcAvlWater <- function(selectyears="all",
 
 
   for (y in "y1995"){
-    runoff <- numeric(length(calcorder))
-    runoff[magpie2lpj] <- yearly_runoff_magpie[,y,]
-
-    lake_evap <- numeric(length(calcorder))
-    lake_evap[magpie2lpj] <- lake_evap_magpie[,y,]
 
     ### River Routing ###
     # Naturalized discharge

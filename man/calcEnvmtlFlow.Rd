@@ -7,18 +7,21 @@
 calcEnvmtlFlow(
   version = "LPJmL4",
   climatetype = "HadGEM2_ES:rcp2p6:co2",
+  cells = "lpjcell",
   LFR_val = 0.1,
   HFR_LFR_less10 = 0.2,
   HFR_LFR_10_20 = 0.15,
   HFR_LFR_20_30 = 0.07,
   HFR_LFR_more30 = 0,
-  EFRyears = c(1961:2000)
+  EFRyears = c(1985:2015)
 )
 }
 \arguments{
 \item{version}{Switch between LPJmL4 and LPJmL5}
 
 \item{climatetype}{Switch between different climate scenarios (default: "CRU_4")}
+
+\item{cells}{Number of cells to be reported: lpjcell (67420, default) or magpiecell (59199)}
 
 \item{LFR_val}{Strictness of environmental flow requirements}
 

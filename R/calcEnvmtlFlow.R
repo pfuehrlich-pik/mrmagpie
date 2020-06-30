@@ -3,6 +3,7 @@
 #'
 #' @param version Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
+#' @param cells Number of cells to be reported: lpjcell (67420, default) or magpiecell (59199)
 #' @param LFR_val Strictness of environmental flow requirements
 #' @param HFR_LFR_less10 High flow requirements (share of total water for cells) with LFR<10percent of total water
 #' @param HFR_LFR_10_20 High flow requirements (share of total water for cells) with 10percent < LFR < 20percent of total water
@@ -21,15 +22,15 @@
 #' \dontrun{ calcOutput("EnvmtlFlow", aggregate = FALSE) }
 #'
 
-calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2",
+calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", cells="lpjcell",
                            LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
-                           EFRyears=c(1961:2000)){
+                           EFRyears=c(1985:2015)){
 
   # Long-term reference period for EFR calculation
   EFRyears <- paste0("y",EFRyears)
 
   ### Monthly Discharge from LPJmL
-  monthly_discharge_magpie <- calcOutput("LPJmL", selectyears=EFRyears, version=version, climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
+  monthly_discharge_magpie <- calcOutput("LPJmL", selectyears=EFRyears, version=version, climatetype=climatetype, subtype="mdischarge_lpjcell", aggregate=FALSE,
                                          harmonize_baseline=FALSE, time="raw")
 
   # Extract years
@@ -58,7 +59,6 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
   ## regime receive a lower HFR." (Bonsch et al. 2015)
   HFR <- LFR
   HFR <- NA
-
   HFR[LFR<0.1*mean_annual_discharge]  <- HFR_LFR_less10 * mean_annual_discharge[LFR<0.1*mean_annual_discharge]
   HFR[LFR>=0.1*mean_annual_discharge] <- HFR_LFR_10_20  * mean_annual_discharge[LFR>=0.1*mean_annual_discharge]
   HFR[LFR>=0.2*mean_annual_discharge] <- HFR_LFR_20_30  * mean_annual_discharge[LFR>=0.2*mean_annual_discharge]
@@ -70,7 +70,18 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
 
   # Reduce EFR to 50% of available water where it exceeds this threshold (according to Smakhtin 2004)
   EFR <- pmin(EFR, 0.5*mean_annual_discharge)
-  EFR <- as.magpie(EFR)
+
+  ### Correct number of cells and transform to magpie object
+  if (cells=="lpjcell"){
+    EFR <- as.magpie(EFR)
+  } else if (cells=="magpiecell"){
+      EFR <- EFR[magclassdata$half_deg$lpj_index]
+      EFR <- as.magpie(EFR)
+      dimnames(EFR)[[1]] <- paste(magclassdata$half_deg$region,1:59199,sep='.')
+  } else {
+    stop("Cell argument not supported. Select lpjcell for 67420 cells or magpiecell for 59199 cells")
+  }
+
 
   # Check for NAs
   if(any(is.na(EFR))){
