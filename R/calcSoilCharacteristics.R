@@ -30,7 +30,7 @@ calcSoilCharacteristics <- function() {
   for (i in 1:length(years)) {
     y           <- as.data.frame(z@.Data[, i, ])
     colnames(y) <- "soil"
-    y           <- left_join(y, soil_char, by = "soil", keep = TRUE)
+    y           <- left_join(y, soil_char, by = "soil", keep = FALSE)
     y           <- data.matrix(y[, -1])
     w[, i, ]    <- y
   }
