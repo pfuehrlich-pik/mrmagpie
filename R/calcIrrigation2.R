@@ -144,9 +144,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
   if (cells=="lpjcell"){
     out <- water_withdrawal
   } else if (cells=="magpiecell"){
-      water_withdrawal <- water_withdrawal[magclassdata$half_deg$lpj_index,,]
-      dimnames(water_withdrawal)[[1]] <- paste(magclassdata$half_deg$region,1:59199,sep='.')
-      out <- water_withdrawal
+    water_withdrawal <- water_withdrawal[magclassdata$cellbelongings$LPJ_input.Index,,]
+    dimnames(water_withdrawal)[[1]] <- paste(magclassdata$half_deg$region,1:59199,sep='.')
+    out <- water_withdrawal
   } else {
     stop("Cell argument not supported. Select lpjcell for 67420 cells or magpiecell for 59199 cells")
   }
