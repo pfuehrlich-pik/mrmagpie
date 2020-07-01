@@ -36,8 +36,12 @@
 
 
 calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
-                           version="LPJmL5", climatetype="CRU_4", time="raw", averaging_range=NULL, dof=NULL,
+                           version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
                            harmonize_baseline=FALSE, ref_year=NULL){
+
+  sizelimit <- getOption("magclass_sizeLimit")
+  options(magclass_sizeLimit=1e+10)
+  on.exit(options(magclass_sizeLimit=sizelimit))
 
   if(harmonize_baseline==FALSE){
 
@@ -80,7 +84,8 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       ##############################
       # Water Withdrawal – Conveyance_losses – Field_losses = Water Consumption
       water_withdrawal <- new.magpie(1:67420,years,sort(paste(systemnames, rep(LPJ2MAG$MAgPIE,3), sep=".")),sets=c("cell.region","year","system.crop"),fill=0)
-      dimnames(water_withdrawal)[[1]] <- gsub("GLO","LPJ",getCells(water_withdrawal))
+      lpj_iso_names    <- toolGetMapping("LPJ_CellBelongingsToCountries.csv",type="cell")
+      dimnames(water_withdrawal)[[1]] <- paste(lpj_iso_names$ISO,1:67420,sep=".")
 
       for (s in systemnames){
         # Water applied to field = Non-consumptive field loss + consumptive loss
@@ -101,7 +106,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
 
     } else {
       # Time smoothing:
-      x     <- calcOutput("Irrigation", version=version, climatetype=climatetype, aggregate=FALSE,
+      x     <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
                           harmonize_baseline=FALSE, time="raw")
 
       # Smoothing data through average:
@@ -126,9 +131,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       stop("Harmonization with raw data not possible. Select time='spline' when applying harmonize_baseline=TRUE")
     } else {
       # Load smoothed data
-      baseline   <- calcOutput("Irrigation", version=version, climatetype=harmonize_baseline, aggregate=FALSE,
+      baseline   <- calcOutput("Irrigation2", version=version, climatetype=harmonize_baseline, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
-      x          <- calcOutput("Irrigation", version=version, climatetype=climatetype, aggregate=FALSE,
+      x          <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
       # Harmonize to baseline
       water_withdrawal <- toolHarmonize2Baseline(x=x, base=baseline, ref_year=ref_year, limited=TRUE, hard_cut=FALSE)

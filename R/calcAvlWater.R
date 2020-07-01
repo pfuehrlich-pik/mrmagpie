@@ -36,6 +36,9 @@ calcAvlWater <- function(selectyears="all",
   }
   rm(data,i)
 
+  # Number of cells to be used for calculation
+  NCELLS <- length(calcorder)
+
   ### LPJ-MAgPIE cell mapping
   #load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
   ### Question: Use LPJ_input.Index or LPJ.Index? What is the difference?
@@ -55,22 +58,23 @@ calcAvlWater <- function(selectyears="all",
   EFR <- as.array(collapseNames(EFR))
 
   # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
-  lake_evap     <- new.magpie(1:67420,years)
+  lake_evap     <- new.magpie(1:NCELLS,years)
   lake_evap[,,] <- 0
+  lake_evap     <- as.array(collapseNames(lake_evap))
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
-  NAg_ww     <- new.magpie(1:67420,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
+  NAg_ww     <- new.magpie(1:NCELLS,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
   NAg_ww[,,] <- 0
-  NAg_ww[magclassdata$cellbelongings$LPJ.Index,,] <- NAg_ww_magpie[,,]
+  NAg_ww[magclassdata$cellbelongings$LPJ_input.Index,,] <- NAg_ww_magpie[,,]
   NAg_ww     <- as.array(collapseNames(NAg_ww))
   rm(NAg_ww_magpie)
 
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
   NAg_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
-  NAg_wc     <- new.magpie(1:67420,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
+  NAg_wc     <- new.magpie(1:NCELLS,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
   NAg_wc[,,] <- 0
-  NAg_wc[magclassdata$cellbelongings$LPJ.Index,,] <- NAg_wc_magpie[,,]
+  NAg_wc[magclassdata$cellbelongings$LPJ_input.Index,,] <- NAg_wc_magpie[,,]
   NAg_wc     <- as.array(collapseNames(NAg_wc))
   rm(NAg_wc_magpie)
 
@@ -89,16 +93,12 @@ calcAvlWater <- function(selectyears="all",
   ####### River routing #######
   #############################
 
-  EFR <- numeric(length(calcorder))
-  EFR[magpie2lpj] <- EFR_magpie
-
   CAD <- numeric(length(calcorder))
   CAD[magpie2lpj] <- CAD_magpie
 
   CAD_w <- CAD/0.4
   CAD_c <- CAD
 
-  NCELLS <- length(calcorder)
 
 
 
