@@ -8,7 +8,7 @@ calcIrrigation2(
   selectyears = "all",
   cells = "lpjcell",
   version = "LPJmL5",
-  climatetype = "CRU_4",
+  climatetype = "HadGEM2_ES:rcp2p6:co2",
   time = "raw",
   averaging_range = NULL,
   dof = NULL,

@@ -73,10 +73,10 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
 
   ### Correct number of cells and transform to magpie object
   if (cells=="lpjcell"){
-    EFR <- as.magpie(EFR)
+    EFR <- as.magpie(EFR, spatial=1)
   } else if (cells=="magpiecell"){
     EFR <- EFR[magclassdata$cellbelongings$LPJ_input.Index]
-    EFR <- as.magpie(EFR)
+    EFR <- as.magpie(EFR, spatial=1)
     dimnames(EFR)[[1]] <- paste(magclassdata$half_deg$region,1:59199,sep='.')
   } else {
     stop("Cell argument not supported. Select lpjcell for 67420 cells or magpiecell for 59199 cells")

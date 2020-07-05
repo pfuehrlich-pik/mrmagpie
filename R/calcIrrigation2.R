@@ -40,7 +40,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
                            harmonize_baseline=FALSE, ref_year=NULL){
 
   sizelimit <- getOption("magclass_sizeLimit")
-  options(magclass_sizeLimit=1e+10)
+  options(magclass_sizeLimit=1e+12)
   on.exit(options(magclass_sizeLimit=sizelimit))
 
   if(harmonize_baseline==FALSE){
@@ -50,17 +50,23 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       ##############################
       ######## Read in data ########
       ##############################
+      ### Mappings
+      lpj_cells_map <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
+      LPJ2MAG       <- toolGetMapping( "MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
+
       ### Read in blue water consumption for irrigated crops (in m^3 per ha per yr):
       blue_water_consumption <- collapseNames(calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="cwater_b_lpjcell", aggregate=FALSE,
                                                                  harmonize_baseline=FALSE,
                                                                  time="raw")[,,"irrigated"])
+      names(dimnames(blue_water_consumption))[1] <- "iso.cell"
+      names(dimnames(blue_water_consumption))[3] <- "crop"
       years       <- getYears(blue_water_consumption)
       cropnames   <- getNames(blue_water_consumption)
       systemnames <- c("drip","sprinkler","surface")
 
       ### Field efficiencies from Jägermeyr et al. (global values) [placeholder!]
-      field_efficiency                <- new.magpie(1:67420,years,sort(paste(systemnames, rep(cropnames,3), sep=".")),sets=c("cell","year","system.crop"))
-      dimnames(field_efficiency)[[1]] <- gsub("GLO","LPJ",getCells(field_efficiency))
+      field_efficiency                     <- new.magpie(1:67420,years,sort(paste(systemnames, rep(cropnames,3), sep=".")),sets=c("iso.cell","year","system.crop"))
+      getCells(field_efficiency)           <- paste(lpj_cells_map$ISO,1:67420,sep=".")
       field_efficiency[,,"drip"]      <- 0.88
       field_efficiency[,,"sprinkler"] <- 0.78
       field_efficiency[,,"surface"]   <- 0.52
@@ -68,41 +74,23 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       ### Use field efficiency from LPJmL here (by system, by crop, on 0.5 degree) [Does it vary by year?]
 
       ### Conveyance efficiency proxy [placeholder]
-      conveyance_efficiency                <- new.magpie(1:67420,years,sort(paste(systemnames, rep(cropnames,3), sep=".")),sets=c("cell","year","system.crop"))
-      dimnames(conveyance_efficiency)[[1]] <- gsub("GLO","LPJ",getCells(conveyance_efficiency))
+      conveyance_efficiency                     <- new.magpie(1:67420,years,sort(paste(systemnames, rep(cropnames,3), sep=".")),sets=c("iso.cell","year","system.crop"))
+      getCells(conveyance_efficiency)           <- paste(lpj_cells_map$ISO,1:67420,sep=".")
       conveyance_efficiency[,,"surface"]   <- 0.7
       conveyance_efficiency[,,"drip"]      <- 0.95
       conveyance_efficiency[,,"sprinkler"] <- 0.95
       conveyance_loss_shr <- 1-conveyance_efficiency
       ### Use field efficiency from LPJmL here (by system, on 0.5 degree) [Does it vary by year?]
 
-      # Load LPJmL to MAgPIE mapping to aggregate to MAgPIE crops
-      LPJ2MAG      <- toolGetMapping( "MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
-
       ##############################
       ######## Calculations ########
       ##############################
       # Water Withdrawal – Conveyance_losses – Field_losses = Water Consumption
-      water_withdrawal <- new.magpie(1:67420,years,sort(paste(systemnames, rep(LPJ2MAG$MAgPIE,3), sep=".")),sets=c("cell.region","year","system.crop"),fill=0)
-      lpj_iso_names    <- toolGetMapping("LPJ_CellBelongingsToCountries.csv",type="cell")
-      dimnames(water_withdrawal)[[1]] <- paste(lpj_iso_names$ISO,1:67420,sep=".")
+      water_applied_to_field <- blue_water_consumption*field_loss_shr + blue_water_consumption
+      water_withdrawal       <- water_applied_to_field*conveyance_loss_shr + water_applied_to_field
 
-      for (s in systemnames){
-        # Water applied to field = Non-consumptive field loss + consumptive loss
-        water_applied_to_field <- (collapseNames(field_loss_shr[,,s]) * blue_water_consumption) + blue_water_consumption
-        # Conveyance loss
-        conveyance_loss <- (collapseNames(conveyance_loss_shr[,,s]) * water_applied_to_field)
-        # Withdrawal from source
-        tmp <- water_applied_to_field + conveyance_loss
-        # Aggregate to MAgPIE crops
-        tmp <- toolAggregate(tmp, LPJ2MAG, from="LPJmL", to="MAgPIE", dim=3, partrel=TRUE)
-        getNames(tmp) <- paste0(s,".",getNames(tmp))
-        names(dimnames(tmp))[3] <- paste0("system.",names(dimnames(tmp))[3])
-        water_withdrawal[,,s] <- tmp[,,s]
-      }
-
-      # Remove negative values
-      water_withdrawal[water_withdrawal<0] <- 0
+      # Aggregate to MAgPIE crops
+      water_withdrawal <- toolAggregate(water_withdrawal, LPJ2MAG, from="LPJmL", to="MAgPIE", dim=3.1, partrel=TRUE)
 
     } else {
       # Time smoothing:
@@ -149,22 +137,25 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
   if (cells=="lpjcell"){
     out <- water_withdrawal
   } else if (cells=="magpiecell"){
-    water_withdrawal <- water_withdrawal[magclassdata$cellbelongings$LPJ_input.Index,,]
+    water_withdrawal                <- water_withdrawal[magclassdata$cellbelongings$LPJ_input.Index,,]
     dimnames(water_withdrawal)[[1]] <- paste(magclassdata$half_deg$region,1:59199,sep='.')
     out <- water_withdrawal
   } else {
     stop("Cell argument not supported. Select lpjcell for 67420 cells or magpiecell for 59199 cells")
   }
 
-  # Check for NAs
+  # Check for NAs and negative values
   if(any(is.na(water_withdrawal))){
-    stop("produced NA airrig")
+    stop("produced NA water withdrawal")
+  }
+  if(any(water_withdrawal<0)){
+    stop("produced negative water withdrawal")
   }
 
   return(list(
     x=out,
     weight=NULL,
     unit="m^3 per ha per yr",
-    description="Irrigation water (water applied in addition to rainfall) for different crop types following LPJmL irrigation system assumptions",
+    description="Irrigation water withdrawn for irrigation for different crop types under different irrigation systems",
     isocountries=FALSE))
 }

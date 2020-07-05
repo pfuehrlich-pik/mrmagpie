@@ -3,11 +3,11 @@
 #'
 #' @param version Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
-#' @param time Time smoothing: average, spline or raw (default)
+#' @param time            Time smoothing: average, spline or raw (default)
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
-#' @param ref_year Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
+#' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
 #'
 #' @import magclass
@@ -43,6 +43,7 @@ calcAvlWater <- function(selectyears="all",
   #load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
   ### Question: Use LPJ_input.Index or LPJ.Index? What is the difference?
   magpie2lpj <- magclassdata$cellbelongings$LPJ_input.Index
+  lpj_cells_map <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
 
   ### Required inputs:
   # Yearly runoff (mio. m^3 / yr) [smoothed]
@@ -64,26 +65,23 @@ calcAvlWater <- function(selectyears="all",
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
-  NAg_ww     <- new.magpie(1:NCELLS,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
-  NAg_ww[,,] <- 0
+  getCells(NAg_ww_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
+  NAg_ww           <- new.magpie(1:NCELLS,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
+  NAg_ww[,,]       <- 0
   NAg_ww[magclassdata$cellbelongings$LPJ_input.Index,,] <- NAg_ww_magpie[,,]
-  NAg_ww     <- as.array(collapseNames(NAg_ww))
+  getCells(NAg_ww) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
+  NAg_ww           <- as.array(collapseNames(NAg_ww))
   rm(NAg_ww_magpie)
 
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
   NAg_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
-  NAg_wc     <- new.magpie(1:NCELLS,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
-  NAg_wc[,,] <- 0
+  getCells(NAg_wc_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
+  NAg_wc           <- new.magpie(1:NCELLS,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
+  NAg_wc[,,]       <- 0
   NAg_wc[magclassdata$cellbelongings$LPJ_input.Index,,] <- NAg_wc_magpie[,,]
-  NAg_wc     <- as.array(collapseNames(NAg_wc))
+  getCells(NAg_wc) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
+  NAg_wc           <- as.array(collapseNames(NAg_wc))
   rm(NAg_wc_magpie)
-
-
-
-
-
-
-
 
   # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
   CAD_magpie <- calcOutput("CommittedAgWaterUse",aggregate=FALSE)
@@ -93,8 +91,7 @@ calcAvlWater <- function(selectyears="all",
   ####### River routing #######
   #############################
 
-  CAD <- numeric(length(calcorder))
-  CAD[magpie2lpj] <- CAD_magpie
+
 
   CAD_w <- CAD/0.4
   CAD_c <- CAD

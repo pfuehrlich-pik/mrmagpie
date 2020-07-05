@@ -22,14 +22,12 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", iniyear=1995, climatetype=
 
   ## Read in Irrigation Water Withdrawals (in m^3 per hectar per year) [smoothed]
 ##### NOTE: Currently: airrig as placeholder until replaced by efficiency calculation
-  airrig <- calcOutput("Irrigation", version="LPJmL5", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, aggregate=FALSE)
-  # Only irrigated needed
-  airrig <- collapseNames(airrig[,,"irrigated"])
+  airrig <- calcOutput("Irrigation2", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, aggregate=FALSE)
   # Pasture is not irrigated in MAgPIE
   airrig <- airrig[,,"pasture",invert=T]
 
   ## Read in cropland area (by crop) from crop area initialization (in mio. ha)
-  crops_grown <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE)
+  crops_grown <- calcOutput("Croparea", sectoral="kcr", cells="lpjcell", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE)
   # Only initialization year needed
   crops_grown <- crops_grown[,paste0("y",iniyear),]
   # Only irrigated needed
