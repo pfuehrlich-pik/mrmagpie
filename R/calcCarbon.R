@@ -1,7 +1,7 @@
 #' @title calcCarbon
 #' @description This function extracts carbon densities from LPJ to MAgPIE
 #'
-#' @param version Switch between LPJmL4 and LPJmL4
+#' @param version Switch between LPJmL4 and LPJmL4 (or both LPJmL4+5)
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
 #' @param time average, spline or raw (default)
 #' @param averaging_range just specify for time=="average": number of time steps to average
@@ -21,58 +21,63 @@
 calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averaging_range=NULL, dof=NULL,
                        harmonize_baseline=FALSE, ref_year="y2015"){
 
-  lpjml_years  <- findset("time")[as.numeric(substring(findset("time"),2))<2099]
+  version_backup <- version
+
+  if(version_backup == "LPJmL4+5") version <- "LPJmL4"
 
   soilc_natveg <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="soilc",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   vegc_natveg  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="vegc",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   litc_natveg  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="litc",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   natveg       <- mbind(litc_natveg, vegc_natveg, soilc_natveg)
+
+  if(version_backup == "LPJmL4+5") version <- "LPJmL5"
 
   soilc_grass  <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="soilc_grass",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   vegc_grass   <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="vegc_grass",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   litc_grass   <-  calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="litc_grass",
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
 
   grass        <- mbind(litc_grass, vegc_grass, soilc_grass)
+
+
+  if(version_backup == "LPJmL4+5") version <- version_backup
 
   topsoilc     <- calcOutput("TopsoilCarbon", version=version, climatetype=climatetype,
                               averaging_range=averaging_range, time=time, dof=dof,
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-                              aggregate=FALSE, years=lpjml_years)
+                              aggregate=FALSE)
   #find cshare
-  cshare_released <- 0.5
+  cshare_released <- calcOutput("SOCLossShare", aggregate=FALSE, years="y1995")
 
   ####################################################
   #Create the output file
   ####################################################
 
 
-  lpjml_years  <- findset("time")[as.numeric(substring(findset("time"),2))<2099]
-
   carbon_stocks <- new.magpie(cells_and_regions=getCells(soilc_natveg),
-                              years= lpjml_years,
+                              years= getYears(natveg),
                               names=c("vegc","soilc","litc"))
 
   carbon_stocks <- add_dimension(carbon_stocks, dim = 3.1, add = "landtype",
@@ -101,9 +106,11 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
     stop("produced NA Carbon")
   }
 
+  weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
+
   return(list(
     x=carbon_stocks,
-    weight=NULL,
+    weight=weight,
     unit="t per ha",
     description="Carbon in tons per hectar for different land use types.",
     isocountries=FALSE))

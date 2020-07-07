@@ -87,6 +87,9 @@ calcYields <- function(version="LPJmL5", climatetype="CRU_4", time="spline", ave
     yields           <- Calib[,,getNames(yields, dim=1)] * yields
   }
 
+  #check again, what makes sense irrigation=FALSE/TRUE?
+  crop_area_weight <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6)
+
   return(list(
     x=yields,
     weight=NULL,

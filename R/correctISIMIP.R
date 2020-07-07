@@ -10,8 +10,9 @@
 #'   readSource("ISIMIP", convert="onlycorrect")
 #' }
 #'
-#' @import madrat
 #' @import magclass
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctISIMIP <- function(x){
 

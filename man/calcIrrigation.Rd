@@ -12,7 +12,8 @@ calcIrrigation(
   averaging_range = NULL,
   dof = 4,
   harmonize_baseline = FALSE,
-  ref_year = NULL
+  ref_year = NULL,
+  rainfedweight = 0.01
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ calcIrrigation(
 \item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
+
+\item{rainfedweight}{For clustering airrig is weighted with cropland_irrigated + rainfedweight * cropland_rainfed (default: 0.01)}
 }
 \value{
 magpie object in cellular resolution

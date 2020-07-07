@@ -27,136 +27,155 @@
 #' retrieveData("CELLULARMAGPIE", revision=12, mainfolder="pathtowhereallfilesarestored")
 #' }
 #' @importFrom madrat setConfig getConfig
+#' @importFrom magpiesets findset
 
 fullCELLULARMAGPIE <- function(rev=0.1, dev="", ctype="c200", climatetype="HadGEM2_ES:rcp2p6:co2", clusterweight=NULL) {
 
-    mag_years_past_short <- c("y1995","y2000","y2005","y2010")
-    mag_years_past_long  <- c("y1995","y2000","y2005","y2010","y2015")
-    mag_years <- findset("time")
-    short_years <- findset("t_all")
-    lpj_years <- seq(1995, 2100,by=5)
+  sizelimit <- getOption("magclass_sizeLimit")
+  options(magclass_sizeLimit=1e+10)
+  on.exit(options(magclass_sizeLimit=sizelimit))
 
-    ### test settings (will be loaded from config in fina version)
-    climatetype="HadGEM2_ES:rcp2p6:co2"
-    harmonize_baseline="CRU_4"
-    ref_year="y2015"
+  setConfig(debug=TRUE)
 
-    map <- calcOutput("Cluster", ctype=ctype, weight=clusterweight, aggregate=FALSE)
-    weightID <- ifelse(is.null(clusterweight),"",paste0("_",names(clusterweight),clusterweight,collapse=""))
-    clustermapname <- paste0("rev",rev,dev,"_",ctype,weightID,"_",getConfig("regionmapping"))
-    toolStoreMapping(map,clustermapname,type="regional",error.existing = FALSE)
-    setConfig(extramappings = clustermapname)
+  mag_years_past_short <- c("y1995","y2000","y2005","y2010")
+  mag_years_past_long  <- c("y1995","y2000","y2005","y2010","y2015")
+  mag_years <- findset("time")
+  short_years <- findset("t_all")
+  lpj_years <- seq(1995, 2100,by=5)
 
-    # 09 drivers
-    ### gridded pop?
+  ### test settings (will be loaded from config in fina version)
+  climatetype="HadGEM2_ES:rcp2p6:co2"
+  harmonize_baseline="CRU_4"
+  ref_year="y2015"
 
-    # 14 yields
-    calcOutput("Yields", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
-               harmonize_baseline=harmonize_baseline, ref_year=ref_year, aggregate = FALSE,
-               years=lpj_years)
+  map <- calcOutput("Cluster", ctype=ctype, weight=clusterweight, aggregate=FALSE)
+  weightID <- ifelse(is.null(clusterweight),"",paste0("_",names(clusterweight),clusterweight,collapse=""))
+  clustermapname <- paste0("rev",rev,dev,"_",ctype,weightID,"_",getConfig("regionmapping"))
+  toolStoreMapping(map,clustermapname,type="regional",error.existing = FALSE)
+  setConfig(extramappings = clustermapname)
 
+  # 09 drivers
+  ### gridded pop?
 
-    # These outputs need to be aggregated using weighted area mean
-    calcOutput("GCMClimate", aggregate="cluster", file = "rcp85.HadGEM2.temperature_c200.mz", GCMModel = "HadGEM2", ClimateVariable = "temperature", rcp = "rcp85")
-    calcOutput("GCMClimate", aggregate="cluster", file = "rcp85.HadGEM2.precipitation_c200.mz", GCMModel = "HadGEM2", ClimateVariable = "precipitation", rcp = "rcp85")
-    calcOutput("GCMClimate", aggregate="cluster", file = "rcp85.HadGEM2.longwave_radiation_c200.mz", GCMModel = "HadGEM2", ClimateVariable = "longwave_radiation", rcp = "rcp85")
-    calcOutput("GCMClimate", aggregate="cluster", file = "rcp85.HadGEM2.shortwave_radiation_c200.mz", GCMModel = "HadGEM2", ClimateVariable = "shortwave_radiation", rcp = "rcp85")
-    calcOutput("GCMClimate", aggregate="cluster", file = "rcp85.HadGEM2.wetdays_c200.mz", GCMModel = "HadGEM2", ClimateVariable = "wetdays", rcp = "rcp85")
-    calcOutput("CO2Atmosphere", aggregate="cluster", file="calcCO2Atmosphere_c200.mz", rcp="rcp85", level="cellular")
-    calcOutput("SoilCharacteristics", aggregate="cluster", file="SoilCharacteristics_c200.mz")
-    calcOutput("ClimateClass", aggregate="cluster", years="y2015", file="koeppen_geiger_c200.mz")
-
-    #10 land
-    calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years=mag_years_past_short, round=6, file="avl_land_t_0.5.mz")
-    calcOutput("LanduseInitialisation", aggregate="cluster", cellular=TRUE, land="fao", input_magpie=TRUE, years=mag_years_past_short, round=6, file="avl_land_t_c200.mz")
-    calcOutput("SeaLevelRise", aggregate=FALSE, cellular=TRUE, years=mag_years, round=6, file="f10_SeaLevelRise_0.5.mz")
-    calcOutput("AvlLandSi", aggregate=FALSE, round=6, file="avl_land_si_0.5.mz")
+  # 14 yields
+  calcOutput("Yields", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year, aggregate = FALSE,
+             years=lpj_years, file=paste0("lpj_yields_0.5.mz"))
+  calcOutput("Yields", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year, aggregate = "cluster",
+             years=lpj_years, file=paste0("lpj_yields_", ctype, ".mz"))
 
 
+  # These outputs need to be aggregated using weighted area mean
+  calcOutput("GCMClimate", aggregate="cluster", file=paste0("rcp85.HadGEM2.temperature_", ctype, ".mz"), GCMModel = "HadGEM2", ClimateVariable = "temperature", rcp = "rcp85")
+  calcOutput("GCMClimate", aggregate="cluster", file=paste0("rcp85.HadGEM2.precipitation_", ctype, ".mz"), GCMModel = "HadGEM2", ClimateVariable = "precipitation", rcp = "rcp85")
+  calcOutput("GCMClimate", aggregate="cluster", file=paste0("rcp85.HadGEM2.longwave_radiation_", ctype, ".mz"), GCMModel = "HadGEM2", ClimateVariable = "longwave_radiation", rcp = "rcp85")
+  calcOutput("GCMClimate", aggregate="cluster", file=paste0("rcp85.HadGEM2.shortwave_radiation_", ctype,  ".mz"), GCMModel = "HadGEM2", ClimateVariable = "shortwave_radiation", rcp = "rcp85")
+  calcOutput("GCMClimate", aggregate="cluster", file=paste0("rcp85.HadGEM2.wetdays_", ctype, ".mz"), GCMModel = "HadGEM2", ClimateVariable = "wetdays", rcp = "rcp85")
+  calcOutput("CO2Atmosphere", aggregate="cluster", file=paste0("calcCO2Atmosphere_", ctype, ".mz"), rcp="rcp85", level="cellular")
+  calcOutput("SoilCharacteristics", aggregate="cluster", file=paste0("SoilCharacteristics_", ctype, ".mz"))
+  calcOutput("ClimateClass", aggregate="cluster", years="y2015", file=paste0("koeppen_geiger_", ctype, ".mz"))
 
-    #30 crop
-    calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE,file="f30_croparea_initialisation_0.5.mz")
-    calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE,file="f30_croparea_w_initialisation_0.5.mz")
-    calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = "cluster", file="f30_croparea_initialisation_c200.mz")
-    calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = "cluster",file="f30_croparea_w_initialisation_c200.mz")
-
-    #32 forestry
-    calcOutput("AfforestationMask",subtype="noboreal",aggregate=FALSE,round=6, file="aff_noboreal_0.5.mz")
-    calcOutput("AfforestationMask",subtype="onlytropical",aggregate=FALSE,round=6, file="aff_onlytropical_0.5.mz")
-    calcOutput("AfforestationMask",subtype="unrestricted",aggregate=FALSE,round=6, file="aff_unrestricted_0.5.mz")
-
-    calcOutput("NpiNdcAdAolcPol", aggregate=FALSE, round=6, file="npi_ndc_ad_aolc_pol_0.5.mz")
-    calcOutput("NpiNdcAffPol", aggregate=FALSE, round=6, file="npi_ndc_aff_pol_0.5.mz")
-
-    #35 natveg
-    calcOutput("AgeClassDistribution", aggregate="cluster", round=6, file="secdf_age_class_dist_c200.mz")
-    calcOutput("ProtectArea", aggregate="cluster", round=6, file="protect_area_c200.mz" )
-
-    #34
-    calcOutput("UrbanLandFuture", aggregate=FALSE, round=6, years=short_years, file="f34_UrbanLand_0.5.mz")
-
-    #40
-    calcOutput("TransportDistance", aggregate=FALSE, round=6, file="transport_distance_0.5.mz")
-
-    #41 area equipped for irrigation
-    calcOutput("AreaEquippedForIrrigation", aggregate="cluster", cellular=TRUE, source="Siebert", round=6, file="avl_irrig_c200.mz")
-    calcOutput("AreaEquippedForIrrigation", aggregate="cluster", cellular=TRUE, source="LUH2v2",  years=mag_years_past_short, round=6, file="avl_irrig_luh_t_c200.mz")
-
-    #42 water demand
-    calcOutput("Irrigation", version="LPJmL5", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, aggregate="cluster", round=6, file="lpj_airrig_c200.mz")
-    calcOutput("EnvmtlFlow", version="LPJmL4", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, aggregate="cluster", round=6, seasonality="grper", file="lpj_envflow_grper_c200.mz")
-    calcOutput("NonAgWaterDemand", source="WATCH_ISIMIP_WATERGAP", years=lpj_years, seasonality="grper", aggregate=FALSE, file="watdem_nonagr_grper_0.5.mz")
-    calcOutput("NonAgWaterDemand", source="WATERGAP2020", years=lpj_years, seasonality="grper", waterusetype="withdrawal", aggregate="cluster", file="watdem_nonagr_ww_grper_c200.mz")
-    calcOutput("NonAgWaterDemand", source="WATERGAP2020", years=lpj_years, seasonality="grper", waterusetype="consumption", aggregate="cluster", file="watdem_nonagr_wc_grper_c200.mz")
-
-    #43 water availability
-    calcOutput("AvlWater", version="LPJmL4", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, seasonality="grper", aggregate="cluster", round=6, file="lpj_watavail_grper_c200.mz")
-
-    #44 biodiversity
-    calcOutput("Luh2SideLayers", aggregate=FALSE, round=6, file="luh2_side_layers_0.5.mz")
-    calcOutput("RRLayer", aggregate=FALSE, round=6, file="rr_layer_0.5.mz")
-
-    #50 nitrogen
-    calcOutput("AtmosphericDepositionRates", cellular=TRUE, aggregate=FALSE, round=6, file="f50_AtmosphericDepositionRates_0.5.mz")
-    calcOutput("NitrogenFixationRateNatural", aggregate=FALSE, round=6, file="f50_NitrogenFixationRateNatural_0.5.mz")
-
-    #52 carbon
-    calcOutput("Carbon", aggregate = FALSE, climatetype=climatetype,
-              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-              time="spline", dof=4, round=6, file="lpj_carbon_stocks_0.5.mz")
-    calcOutput("TopsoilCarbon", aggregate = FALSE, climatetype=climatetype,
-              harmonize_baseline=harmonize_baseline, ref_year=ref_year,
-              time="spline", dof=4, round=6, file="lpj_carbon_topsoil_0.5.mz")
-
-    #59 som
-    calcOutput("SOMinitialsiationPools", aggregate = FALSE, round=6, file="f59_som_initialisation_pools_0.5.mz")
+  #10 land
+  calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years=mag_years_past_short, round=6, file="avl_land_t_0.5.mz")
+  calcOutput("LanduseInitialisation", aggregate="cluster", cellular=TRUE, land="fao", input_magpie=TRUE, years=mag_years_past_short, round=6, file=paste0("avl_land_t_", ctype, ".mz"))
+  calcOutput("SeaLevelRise", aggregate=FALSE, cellular=TRUE, years=mag_years, round=6, file="f10_SeaLevelRise_0.5.mz")
+  calcOutput("AvlLandSi", aggregate=FALSE, round=6, file="avl_land_si_0.5.mz")
 
 
-    ## OTHER ##
-    calcOutput("CalibratedArea", aggregate=FALSE, round=6, file="calibrated_area_0.5.mz" )
-    calcOutput("CshareReleased", aggregate=FALSE, round=6, file="cshare_released_0.5.mz")
+  #30 crop
+  calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE,file="f30_croparea_initialisation_0.5.mz")
+  calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE,file="f30_croparea_w_initialisation_0.5.mz")
+  calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = "cluster", file=paste0("f30_croparea_initialisation_", ctype, ".mz"))
+  calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = "cluster",file=paste0("f30_croparea_w_initialisation_", ctype, ".mz"))
 
-    ##### AGGREGATION ######
+  #32 forestry
+  calcOutput("AfforestationMask", subtype="noboreal",     aggregate="cluster", round=6, file=paste0("aff_noboreal_", ctype, ".mz"))
+  calcOutput("AfforestationMask", subtype="onlytropical", aggregate="cluster", round=6, file=paste0("aff_onlytropical_", ctype, ".mz"))
+  calcOutput("AfforestationMask", subtype="unrestricted", aggregate="cluster", round=6, file=paste0("aff_unrestricted_", ctype, ".mz"))
 
-    # create info file
-    writeInfo <- function(file,lpjml_data, res_high, res_out, rev) {
-      functioncall <- paste(deparse(sys.call(-1)), collapse = "")
+  calcOutput("NpiNdcAdAolcPol", aggregate="cluster", round=6, file=paste0("npi_ndc_ad_aolc_pol_", ctype, ".mz"))
+  calcOutput("NpiNdcAffPol",    aggregate="cluster", round=6, file=paste0("npi_ndc_aff_pol_", ctype, ".mz"))
 
-      map <- toolMappingFile("regional", getConfig("regionmapping"),
-                             readcsv = TRUE)
-      regionscode <- regionscode(map)
+  #35 natveg
+  calcOutput("AgeClassDistribution", aggregate="cluster", round=6, file=paste0("secdf_age_class_dist_", ctype, ".mz"))
+  calcOutput("ProtectArea",          aggregate="cluster", round=6, file=paste0("protect_area_", ctype, ".mz") )
 
-      info <- c('lpj2magpie settings:',
-                paste('* LPJmL data:',lpjml_data),
-                paste('* Revision:', rev),
-                '','aggregation settings:',
-                paste('* Input resolution:',res_high),
-                paste('* Output resolution:',res_out),
-                paste('* Regionscode:',regionscode),
-                paste('* Call:', functioncall))
-      cat(info,file=file,sep='\n')
-    }
-    writeInfo(file='info.txt', lpjml_data="default", res_high="0.5", res_out="IDK", rev=rev)
+  #34
+  calcOutput("UrbanLandFuture", aggregate=FALSE, round=6, years=short_years, file="f34_UrbanLand_0.5.mz")
+  calcOutput("UrbanLandFuture", aggregate="cluster", round=6, years=short_years, file=paste0("f34_UrbanLand_", ctype, ".mz"))
+
+  #40
+  calcOutput("TransportDistance", aggregate="cluster", round=6, file=paste0("transport_distance_", ctype, ".mz"))
+
+  #41 area equipped for irrigation
+  calcOutput("AreaEquippedForIrrigation", aggregate="cluster", cellular=TRUE, source="Siebert", round=6, file=paste0("avl_irrig_", ctype, ".mz"))
+  calcOutput("AreaEquippedForIrrigation", aggregate="cluster", cellular=TRUE, source="LUH2v2",  years=mag_years_past_short, round=6, file=paste0("avl_irrig_luh_t_", ctype, ".mz"))
+
+  #42 water demand
+  calcOutput("Irrigation", version="LPJmL5", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, aggregate="cluster", round=6, file=paste0("lpj_airrig_", ctype, ".mz"))
+  calcOutput("EnvmtlFlow", version="LPJmL4", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, aggregate="cluster", round=6, seasonality="grper", file=paste0("lpj_envflow_grper_", ctype, ".mz"))
+  calcOutput("NonAgWaterDemand", source="WATCH_ISIMIP_WATERGAP", years=lpj_years, seasonality="grper", aggregate="cluster", file="watdem_nonagr_grper_0.5.mz")
+  calcOutput("NonAgWaterDemand", source="WATERGAP2020", years=lpj_years, seasonality="grper", waterusetype="withdrawal", aggregate="cluster", file=paste0("watdem_nonagr_ww_grper_", ctype, ".mz"))
+  calcOutput("NonAgWaterDemand", source="WATERGAP2020", years=lpj_years, seasonality="grper", waterusetype="consumption", aggregate="cluster", file=paste0("watdem_nonagr_wc_grper_", ctype, ".mz"))
+
+  #43 water availability
+  calcOutput("AvlWater", version="LPJmL4", years=lpj_years, climatetype=climatetype, harmonize_baseline=harmonize_baseline, ref_year=ref_year, time="spline", dof=4, seasonality="grper", aggregate="cluster", round=6, file=paste0("lpj_watavail_grper_", ctype, ".mz"))
+
+  #44 biodiversity
+  calcOutput("Luh2SideLayers", aggregate="cluster", round=6, file=paste0("luh2_side_layers_", ctype, ".mz"))
+  calcOutput("RRLayer",        aggregate="cluster", round=6, file=paste0("rr_layer_", ctype, ".mz"))
+
+  #50 nitrogen
+  calcOutput("AtmosphericDepositionRates", cellular=TRUE, aggregate=FALSE, years ="y1995", round=6, file="f50_AtmosphericDepositionRates_0.5.mz")
+  calcOutput("NitrogenFixationRateNatural",               aggregate=FALSE, years ="y1995", round=6, file="f50_NitrogenFixationRateNatural_0.5.mz")
+
+  calcOutput("AtmosphericDepositionRates", cellular=TRUE, aggregate="cluster", round=6, file=paste0("f50_AtmosphericDepositionRates_", ctype, ".mz"))
+  calcOutput("NitrogenFixationRateNatural",               aggregate="cluster", round=6, file=paste0("f50_NitrogenFixationRateNatural_", ctype, ".mz"))
+
+
+
+  #52 carbon
+  calcOutput("Carbon", aggregate = FALSE, version="LPJmL4+5", climatetype=climatetype,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+             time="spline", dof=4, round=6, years="y1995", file="lpj_carbon_stocks_0.5.mz")
+  calcOutput("TopsoilCarbon", aggregate = FALSE, version="LPJmL4", climatetype=climatetype,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+             time="spline", dof=4, round=6, years="y1995", file="lpj_carbon_topsoil_0.5.mz")
+
+  calcOutput("Carbon", aggregate = "cluster", version="LPJmL4+5", climatetype=climatetype,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+             time="spline", dof=4, round=6, years=lpj_years, file=paste0("lpj_carbon_stocks_", ctype, ".mz"))
+  calcOutput("TopsoilCarbon", aggregate = "cluster", version="LPJmL4", climatetype=climatetype,
+             harmonize_baseline=harmonize_baseline, ref_year=ref_year,
+             time="spline", dof=4, round=6, years=lpj_years, file=paste0("lpj_carbon_topsoil_", ctype, ".mz"))
+
+
+  #59 som
+  calcOutput("SOMinitialsiationPools", aggregate="cluster", round=6, file=paste0("f59_som_initialisation_pools_", ctype, ".mz"))
+  calcOutput("SOCLossShare",           aggregate="cluster", round=6, years="y1995", file=paste0("cshare_released_", ctype, ".mz"))
+
+  ##### AGGREGATION ######
+
+  # create info file
+  writeInfo <- function(file,lpjml_data, res_high, res_out, rev) {
+    functioncall <- paste(deparse(sys.call(-1)), collapse = "")
+
+    map <- toolMappingFile("regional", getConfig("regionmapping"),
+                           readcsv = TRUE)
+    regionscode <- regionscode(map)
+
+    info <- c('lpj2magpie settings:',
+              paste('* LPJmL data:',lpjml_data),
+              paste('* Revision:', rev),
+              '','aggregation settings:',
+              paste('* Input resolution:',res_high),
+              paste('* Output resolution:',res_out),
+              paste('* Regionscode:',regionscode),
+              paste('* Call:', functioncall))
+    cat(info,file=file,sep='\n')
+  }
+  writeInfo(file='info.txt', lpjml_data="default", res_high="0.5", res_out="IDK", rev=rev)
 
 
 }

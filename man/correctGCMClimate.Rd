@@ -20,6 +20,7 @@ Correct GCMs climate variables
 \dontrun{
 readSource("GCMClimate", subtype="rcp85:HadGEM2.temperature", convert="onlycorrect")
 }
+
 }
 \seealso{
 \code{\link{readGCMClimate}}

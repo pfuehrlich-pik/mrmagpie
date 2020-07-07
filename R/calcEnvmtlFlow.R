@@ -14,6 +14,7 @@
 #' @import magclass
 #' @import madrat
 #' @importFrom stats quantile
+#' @importFrom mrcommons toolHarmonize2Baseline
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier, Jens Heinke

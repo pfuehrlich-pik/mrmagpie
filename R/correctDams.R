@@ -11,6 +11,8 @@
 #'   readSource("Dams", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctDams <- function(x){
 

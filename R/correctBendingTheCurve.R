@@ -9,6 +9,8 @@
 #'   readSource("BendingTheCurve", subtype="rr_layer", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 
 correctBendingTheCurve <- function(x){

@@ -10,8 +10,10 @@
 #' \dontrun{
 #' readSource("GCMClimate", subtype="rcp85:HadGEM2.temperature", convert="onlycorrect")
 #' }
-#' @import madrat
+#'
 #' @import magclass
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctGCMClimate <- function(x){
 

@@ -11,6 +11,8 @@
 #'   readSource("TransportDistance", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctTransportDistance <- function(x){
 

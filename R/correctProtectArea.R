@@ -11,6 +11,8 @@
 #'   readSource("ProtectArea", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctProtectArea <- function(x){
 

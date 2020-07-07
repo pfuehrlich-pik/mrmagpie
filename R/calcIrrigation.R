@@ -9,6 +9,7 @@
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
 #' @param ref_year Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
+#' @param rainfedweight For clustering airrig is weighted with cropland_irrigated + rainfedweight * cropland_rainfed (default: 0.01)
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier, Abhijeet Mishra
@@ -17,6 +18,7 @@
 #' \dontrun{ calcOutput("Irrigation", aggregate = FALSE) }
 #'
 #' @importFrom magpiesets findset
+#' @importFrom mrcommons toolHarmonize2Baseline
 
 #### Rewrite this function!!!!
 ### Get: crop water requirement (per crop) from LPJmL (e.g. NIR, blue water consumption, blue water transpiration?)
@@ -35,21 +37,27 @@
 
 calcIrrigation <- function(selectyears="all",
                            version="LPJmL5", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
-                           harmonize_baseline=FALSE, ref_year=NULL){
+                           harmonize_baseline=FALSE, ref_year=NULL, rainfedweight=0.01){
+
+  sizelimit <- getOption("magclass_sizeLimit")
+  options(magclass_sizeLimit=1e+10)
+  on.exit(options(magclass_sizeLimit=sizelimit))
 
   if(harmonize_baseline==FALSE){
 
     if(time=="raw"){
       # Read in airrig (irrigation water applied additionally to rainfall where irrigation takes place):
-      lpj_airrig <- collapseNames(calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="irrig", aggregate=FALSE,
+      lpj_airrig   <- collapseNames(calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="irrig", aggregate=FALSE,
                                                                  harmonize_baseline=FALSE,
                                                                  time="raw")[,,"irrigated"])
 
       # Load LPJmL to MAgPIE mapping to aggregate to MAgPIE crops
-      LPJ2MAG      <- toolGetMapping( "MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
+      LPJ2MAG      <- toolGetMapping("MAgPIE_LPJmL.csv", type = "sectoral", where = "mappingfolder")
 
       # Aggregate to MAgPIE crops
       mag_airrig   <- toolAggregate(lpj_airrig, LPJ2MAG, from = "LPJmL", to = "MAgPIE", dim=3.1, partrel=TRUE)
+      # Remove pasture (pasture is not irrigated in MAgPIE)
+      mag_airrig   <- mag_airrig[,,"pasture",invert=T]
 
       # Remove negative airrig
       mag_airrig[mag_airrig<0] <- 0
@@ -100,7 +108,9 @@ calcIrrigation <- function(selectyears="all",
     stop("produced NA airrig")
   }
 
-  crop_area_weight <- collapseNames(calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE, years="y1995", round=6)[,,"irrigated"])
+  # Clustering weight:
+  cropland_total   <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE, years="y1995", round=6)
+  crop_area_weight <- collapseNames(cropland_total[,,"irrigated"]) + rainfedweight * collapseNames(cropland_total[,,"rainfed"])
 
   return(list(
     x=mag_airrig,

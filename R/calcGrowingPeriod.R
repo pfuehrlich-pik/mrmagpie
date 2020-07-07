@@ -17,8 +17,10 @@
 #'
 #' @examples
 #' \dontrun{ calcOutput("GrowingPeriod", aggregate = FALSE) }
+#'
 #' @importFrom madrat toolGetMapping toolAggregate
 #' @importFrom magclass collapseNames getNames new.magpie getYears dimSums
+#' @importFrom mrcommons toolHarmonize2Baseline
 #'
 #' @export
 

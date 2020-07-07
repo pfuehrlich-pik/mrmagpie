@@ -12,6 +12,7 @@
 #'
 #' @import magclass
 #' @import madrat
+#' @importFrom mrcommons toolHarmonize2Baseline
 #'
 #' @return magpie object in cellular resolution
 #' @author Jens Heinke, Felicitas Beier

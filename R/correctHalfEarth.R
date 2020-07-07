@@ -11,6 +11,8 @@
 #'   readSource("HalfEarth", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctHalfEarth <- function(x){
 

@@ -10,8 +10,9 @@
 #'   readSource("WATERGAP", convert="onlycorrect")
 #' }
 #'
-#' @import madrat
 #' @import magclass
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctWATERGAP <- function(x){
 

@@ -4,9 +4,10 @@
 #' Currently linearly interpolated (for lack of better SLR function) from 2100 back, see readGCF_SeaLevelRise
 #' @return gridded magpie object, with percentage of land lost per grid
 #' @author David Chen
+#'
 #' @importFrom magpiesets findset
 #' @importFrom magclass setYears time_interpolate
-
+#' @importFrom mrcommons toolHoldConstantBeyondEnd
 
 calcSeaLevelRise <- function() {
 

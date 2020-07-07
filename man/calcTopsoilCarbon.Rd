@@ -15,7 +15,7 @@ calcTopsoilCarbon(
 )
 }
 \arguments{
-\item{version}{Switch between LPJmL4 and LPJmL4}
+\item{version}{Switch between LPJmL4 and LPJmL4 (or LPJmL4+5)}
 
 \item{climatetype}{Switch between different climate scenarios (default: "CRU_4")}
 

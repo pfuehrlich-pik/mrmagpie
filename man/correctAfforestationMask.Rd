@@ -22,6 +22,7 @@ correct Afforestation Mask where afforestation is possible
 \dontrun{
   readSource("AfforestationMask",subtype="unrestricted", convert="onlycorrect")
 }
+
 }
 \seealso{
 \code{\link{readAfforestationMask}}

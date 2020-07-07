@@ -12,12 +12,13 @@
 
 calcLuh2SideLayers <-function(){
 
-  x <- readSource("BendingTheCurve", subtype = "luh2_side_layers", convert="onlycorrect")
+  x      <- readSource("BendingTheCurve", subtype = "luh2_side_layers", convert="onlycorrect")
+  weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
 
 return(list(
   x=x,
-  weight=NULL,
-  unit="bool (none)",
+  weight=weight,
+  unit="boolean",
   description="Data from LUH2 provided by David Leclere from IIASA, Bending the curve on biodiversity loss",
   isocountries=FALSE))
 }

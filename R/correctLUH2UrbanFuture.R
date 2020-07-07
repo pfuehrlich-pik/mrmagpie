@@ -1,4 +1,5 @@
 #' @importFrom magclass getCells<- getCells
+#' @importFrom mrcommons toolCell2isoCell
 correctLUH2UrbanFuture<-function(x,subtype){
 
   if(any(is.na(x))){

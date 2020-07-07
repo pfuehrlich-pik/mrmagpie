@@ -11,7 +11,9 @@
 #' \dontrun{
 #'   readSource("AfforestationMask",subtype="unrestricted", convert="onlycorrect")
 #' }
+#'
 #' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctAfforestationMask <- function(x,subtype){
 

@@ -11,6 +11,8 @@
 #'   readSource("GFAD", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctGFAD <- function(x){
 

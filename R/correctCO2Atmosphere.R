@@ -10,8 +10,10 @@
 #' \dontrun{
 #' readSource("CO2Atmosphere", subtype="rcp85", convert="onlycorrect")
 #' }
-#' @import madrat
+#'
 #' @import magclass
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctCO2Atmosphere <- function(x){
 

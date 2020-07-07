@@ -44,6 +44,7 @@ in order to determine when irrigation can take place.
 }
 \examples{
 \dontrun{ calcOutput("GrowingPeriod", aggregate = FALSE) }
+
 }
 \author{
 Kristine Karstens

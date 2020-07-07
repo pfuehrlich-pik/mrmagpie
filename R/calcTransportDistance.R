@@ -12,11 +12,12 @@
 
 calcTransportDistance <-function(){
 
-x <- readSource("TransportDistance", convert="onlycorrect")
+x      <- readSource("TransportDistance", convert="onlycorrect")
+weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
 
 return(list(
   x=x,
-  weight=NULL,
+  weight=weight,
   unit="Travel Time (minutes)",
   description="Travel time to major cities Nelson 2008 EC JRC, see model documentation",
   isocountries=FALSE))

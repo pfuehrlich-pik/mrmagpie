@@ -11,6 +11,8 @@
 #'   readSource("AvlLandSi", convert="onlycorrect")
 #' }
 #'
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctAvlLandSi <- function(x){
 

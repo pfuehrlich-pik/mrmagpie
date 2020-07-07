@@ -12,11 +12,12 @@
 
 calcRRLayer <-function(){
 
-x <- readSource("BendingTheCurve", subtype = "rr_layer", convert="onlycorrect")
+  x      <- readSource("BendingTheCurve", subtype = "rr_layer", convert="onlycorrect")
+  weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
 
 return(list(
   x=x,
-  weight=NULL,
+  weight=weight,
   unit="Range-Rarity (-)",
   description="range-rarity layer provided by David Leclere from IIASA, Bending the curve on biodiversity loss",
   isocountries=FALSE))

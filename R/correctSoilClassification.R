@@ -11,8 +11,9 @@
 #'   readSource("SoilClassification", subtype="HWSD.soil", convert="onlycorrect")
 #' }
 #'
-#' @import madrat
 #' @import magclass
+#' @importFrom madrat toolConditionalReplace
+#' @importFrom mrcommons toolCell2isoCell
 
 correctSoilClassification <- function(x){
 
