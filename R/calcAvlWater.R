@@ -65,7 +65,7 @@ calcAvlWater <- function(selectyears="all",
   lake_evap     <- as.array(collapseNames(lake_evap))
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
-  NAg_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", aggregate=FALSE)
+  NAg_ww_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", seasonality="total", aggregate=FALSE)
   getCells(NAg_ww_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
   NAg_ww           <- new.magpie(1:NCELLS,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
   NAg_ww[,,]       <- 0
@@ -75,7 +75,7 @@ calcAvlWater <- function(selectyears="all",
   rm(NAg_ww_magpie)
 
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
-  NAg_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", aggregate=FALSE)
+  NAg_wc_magpie <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", seasonality="total", aggregate=FALSE)
   getCells(NAg_wc_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
   NAg_wc           <- new.magpie(1:NCELLS,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
   NAg_wc[,,]       <- 0
@@ -88,17 +88,10 @@ calcAvlWater <- function(selectyears="all",
   CAD_magpie <- calcOutput("CommittedAgWaterUse",aggregate=FALSE)
   CAD_magpie <- as.array(collapseNames(CAD_magpie))
 
+
   #############################
   ####### River routing #######
   #############################
-
-
-
-  CAD_w <- CAD/0.4
-  CAD_c <- CAD
-
-
-
 
   for (y in "y1995"){
 

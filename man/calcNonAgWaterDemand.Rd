@@ -10,7 +10,8 @@ calcNonAgWaterDemand(
   time = "raw",
   averaging_range = NULL,
   dof = NULL,
-  waterusetype = "withdrawal"
+  waterusetype = "withdrawal",
+  seasonality = "total"
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ calcNonAgWaterDemand(
 \item{dof}{only specify if time=="spline": degrees of freedom needed for spline}
 
 \item{waterusetype}{withdrawal (default) or consumption}
+
+\item{seasonality}{total (default) or grper (growing period)}
 }
 \value{
 magpie object in cellular resolution
