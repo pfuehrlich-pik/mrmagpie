@@ -1,12 +1,13 @@
 #' @title readGrassYldEmu
-#' @description Read the results of the grass harvest maximization performed for the grass havest emulators
-#' @param subtype subtype of file to be opened
-#' @return Magpie object on a celullar level with maximum gass harvest in gC/m²
+#' @description Read files related to the training and optimization of the LPJml emulators.
+#' @param subtype Subtype of file to be opened. Subtypes available:
+#' 'max_harvest', 'weights', 'inputs',  'stddevs' and 'means'.
+#' @return Magpie objects with a diverse inforamtion
 #' @author Marcos Alves
 #' @examples
 #'
 #' \dontrun{
-#' readSource("GrassYldEmu", subtype = "GrassYldEmu:20f33a2280.max_harvest", convert="onlycorrect")
+#' readSource("GrassYldEmu", subtype = "GrassYldEmu:20f33a2280.weights", convert="onlycorrect")
 #' }
 #'
 #' @import madrat
@@ -14,9 +15,9 @@
 #'
 
 readGrassYldEmu <-
-  function(subtype = "GrassYldEmu:20f33a2280.max_harvest") {
-    if (grepl("\\.", subtype) & grepl("\\:", subtype)) {
-      type     <- strsplit(gsub(":", "/" , subtype), split = "\\.")
+  function(subtype = "109325f71e.inputs") {
+    if (grepl("\\.", subtype)) {
+      type     <- strsplit(subtype, split = "\\.")
       folder      <- unlist(type)[1]
       subtype     <- unlist(type)[2]
 
@@ -26,7 +27,7 @@ readGrassYldEmu <-
 
     }
 
-    if (dir.exists(path(folder))) {
+    if (dir.exists(file.path(folder))) {
       files_list <- list.files(folder)
       file <- files_list[grep(subtype, files_list)]
      } else {
@@ -35,12 +36,18 @@ readGrassYldEmu <-
      }
 
     if (subtype == "max_harvest") {
-      max_grass <- unlist(readRDS(path(folder,file)))
+      max_grass <- unlist(readRDS(file.path(folder,file)))
       nyears <- length(max_grass)/59199
       matrix <- matrix(max_grass, ncol = nyears)
       magpie <- as.magpie(matrix, spatial = 1, temporal = 2)
 
       x <-  collapseNames(magpie)
+      getNames(x) <- subtype
+    }
+
+    if(subtype %in% c("weights", "inputs", "mean", "stddevs")){
+      x <- readRDS(file.path(folder,file))
+      x <- as.magpie(as.matrix(x), spatial = 1)
       getNames(x) <- subtype
     }
 

@@ -52,7 +52,7 @@ calcGrowingPeriod <- function(version="LPJmL5", climatetype="CRU_4", time="raw",
 
       # Read yields first
       yields       <- collapseNames(calcOutput("Yields", version=version, climatetype=climatetype, time=time, averaging_range=averaging_range, dof=dof,
-                                         harmonize_baseline=FALSE, calib_proxy=FALSE, split_cropcalc=FALSE, aggregate = FALSE)[,,"irrigated"])
+                                         harmonize_baseline=FALSE, aggregate = FALSE)[,,"irrigated"])
 
       # Load Sowing dates from LPJmL (use just rainfed dates since they do not differ for irrigated and rainfed)
       sowd         <- collapseNames(calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="sdate", time="raw",

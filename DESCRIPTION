@@ -1,8 +1,8 @@
 Package: mrmagpie
 Type: Package
 Title: madrat based MAgPIE Input Data Library
-Version: 0.10.2
-Date: 2020-07-07
+Version: 0.10.3
+Date: 2020-07-13
 Authors@R: c(person("Kristine", "Karstens", email = "karstens@pik-potsdam.de", role = c("aut","cre")),
              person("Jan Philipp", "Dietrich", email = "dietrich@pik-potsdam.de", role = "aut"),
              person("David", "Chen", role = "aut"),
@@ -35,7 +35,7 @@ License: LGPL-3 | file LICENSE
 LazyData: no
 Encoding: UTF-8
 RoxygenNote: 7.1.1
-ValidationKey: 1881900
+ValidationKey: 1900968
 Suggests: knitr,
           rmarkdown
 VignetteBuilder: knitr
