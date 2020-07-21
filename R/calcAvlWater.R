@@ -9,6 +9,7 @@
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
 #' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
+#' @param EFR Environmental flow requirements activated (TRUE) or not (FALSE)
 #'
 #' @import magclass
 #' @import madrat
@@ -23,7 +24,7 @@
 
 calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
-                         harmonize_baseline=FALSE, ref_year="y2015"){
+                         harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE){
 
   #############################
   ####### Read in Data ########
@@ -35,29 +36,40 @@ calcAvlWater <- function(selectyears="all",
   for (i in 1:length(data)){
     assign(paste(names(data[[i]])), data[[i]])
   }
+  calcorder <- unlist(calcorder)
+  nextcell  <- unlist(nextcell)
+  endcell   <- unlist(endcell)
   rm(data,i)
 
   # Number of cells to be used for calculation
-  NCELLS <- length(calcorder$calcorder)       ##### Why nested here??? Mistake in loop above?
+  NCELLS <- length(calcorder)
 
   ### LPJ-MAgPIE cell mapping
   #load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
   ### Question: Use LPJ_input.Index or LPJ.Index? What is the difference?
-  magpie2lpj <- magclassdata$cellbelongings$LPJ_input.Index
+  magpie2lpj    <- magclassdata$cellbelongings$LPJ_input.Index
   lpj_cells_map <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
 
   ### Required inputs:
   # Yearly runoff (mio. m^3 / yr) [smoothed]
   yearly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="runoff_lpjcell", aggregate=FALSE,
-                                        harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
+                                        harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
   yearly_runoff <- as.array(collapseNames(yearly_runoff))
   years <- getYears(yearly_runoff)
 
   # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
-  EFR <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
-             LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
-             EFRyears=c(1985:2015))
-  EFR <- as.array(collapseNames(EFR))
+  if (EFR==TRUE){
+    EFR <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
+                      LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
+                      EFRyears=c(1985:2015))
+    EFR <- as.array(collapseNames(EFR))
+  } else if (EFR==FALSE){
+    EFR <- new.magpie(1:NCELLS,fill=0)
+    getCells(EFR) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
+    EFR <- as.array(collapseNames(EFR))
+  } else {
+    stop("Specify whether environmental flows are activated or not via argument EFR")
+  }
 
   # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
   lake_evap     <- new.magpie(1:NCELLS,years)
@@ -65,7 +77,7 @@ calcAvlWater <- function(selectyears="all",
   lake_evap     <- as.array(collapseNames(lake_evap))
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
-  NAg_ww_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="withdrawal", seasonality="total", aggregate=FALSE)
+  NAg_ww_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time="spline", dof=4, averaging_range=NULL, waterusetype="withdrawal", seasonality="total", aggregate=FALSE)
   getCells(NAg_ww_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
   NAg_ww           <- new.magpie(1:NCELLS,getYears(NAg_ww_magpie),getNames(NAg_ww_magpie))
   NAg_ww[,,]       <- 0
@@ -75,7 +87,7 @@ calcAvlWater <- function(selectyears="all",
   rm(NAg_ww_magpie)
 
   # Non-Agricultural Water Consumption (in mio. m^3 / yr) [smoothed]
-  NAg_wc_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time=time, dof=dof, averaging_range=averaging_range, waterusetype="consumption", seasonality="total", aggregate=FALSE)
+  NAg_wc_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time="spline", dof=4, averaging_range=NULL, waterusetype="consumption", seasonality="total", aggregate=FALSE)
   getCells(NAg_wc_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
   NAg_wc           <- new.magpie(1:NCELLS,getYears(NAg_wc_magpie),getNames(NAg_wc_magpie))
   NAg_wc[,,]       <- 0
@@ -85,8 +97,9 @@ calcAvlWater <- function(selectyears="all",
   rm(NAg_wc_magpie)
 
   # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
-  CAD_magpie <- calcOutput("CommittedAgWaterUse",aggregate=FALSE)
-  CAD_magpie <- as.array(collapseNames(CAD_magpie))
+  CAU_magpie <- calcOutput("CommittedAgWaterUse",iniyear=1995,irrigini="Jaegermeyr_lpjcell",time="raw",dof=NULL,aggregate=FALSE)
+  CAW_magpie <- as.array(collapseNames(CAU_magpie[,,"withdrawal"]))
+  CAC_magpie <- as.array(collapseNames(CAU_magpie[,,"consumption"]))
 
 
   #############################
@@ -94,29 +107,56 @@ calcAvlWater <- function(selectyears="all",
   #############################
 
   for (y in "y1995"){
-
-    ### River Routing ###
     # Naturalized discharge
     discharge_nat <- numeric(NCELLS)
+    # Discharge considering human uses
+    discharge     <- numeric(NCELLS)
+    # Water available in cell
+    avl_wat_nat   <- numeric(NCELLS)
+    avl_wat       <- numeric(NCELLS)
+    # Water available for consumption
+    avl_cons      <- numeric(NCELLS)
+    # Surplus water (to be distributed across river basin)
+    surplus_wat   <- numeric(NCELLS)
 
     for (c in 1:NCELLS){
-      discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)]) - sum(lake_evap[c(upstreamcells[[c]],c)])
+      # nat.discharge  =  inflow from upstream + runoff on cell  -  lake evaporation (of cell and upstream)
+      discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)])   -  sum(lake_evap[c(upstreamcells[[c]],c)])
+      # av. water in cell = nat.discharge  - environmental flow requirements
+      avl_wat_nat[c]   <- discharge_nat[c] - EFR[c]
     }
 
+    ### River Routing ###
+    for (o in 1:max(calcorder)) {
+      cells <- which(calcorder==o)
 
-    for (scenario in "ssp2"){
-      # NAg_wc <- numeric(length(calcorder))
-      # NAg_wc[magpie2lpj] <- NAg_wc_magpie[,y,scenario]
-      #
-      # NAg_ww <- numeric(length(calcorder))
-      # NAg_ww[magpie2lpj] <- NAg_ww_magpie[,y,scenario]
+      for (scen in "ssp2"){
+        for (c in cells){
 
-      ### River Routing Algorithm ###
+          # Outflow from one cell to the next
+          # (Subtract water consumption in cell (committed ag. and non-ag.))
+          discharge[c] <- avl_wat_nat[c] - NAg_wc[c,y,scen] - CAC_magpie[c]
+
+          # Account for water withdrawals (committed ag. and non-ag.)
+          # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
+          avl_cons[c] <- discharge[c] - sum(NAg_ww[c(downstreamcells[[c]],c)]) - sum(CAW_magpie[c(downstreamcells[[c]],c)])
+          ##### NOTE: need to come up with solution when several different upstream cells for one downstream cell (see notes back home!)
+
+          ## if length(upstreamcells) > 1: shr * withdrawal
 
 
+          # Discharge to be distributed across cells of river basin
+        #  surplus_wat[c]
+        }
+      }
     }
   }
 
+  ### Water allocation algorithm for "surplus water" across the river basin ###
+  ## Options:
+  # Discharge-weighted distribution
+  # Potential yield improvement maximization
+  # Yield improvement threshold & potential cropland
 
 
 

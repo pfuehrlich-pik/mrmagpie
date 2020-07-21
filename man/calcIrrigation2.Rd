@@ -13,7 +13,8 @@ calcIrrigation2(
   averaging_range = NULL,
   dof = NULL,
   harmonize_baseline = FALSE,
-  ref_year = NULL
+  ref_year = NULL,
+  irrig_requirement = "withdrawal"
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ calcIrrigation2(
 \item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
+
+\item{irrig_requirement}{consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements}
 }
 \value{
 magpie object in cellular resolution

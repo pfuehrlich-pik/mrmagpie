@@ -6,17 +6,16 @@
 \usage{
 calcCommittedAgWaterUse(
   version = "LPJmL5",
-  iniyear = 1995,
   climatetype = "HadGEM2_ES:rcp2p6:co2",
   time = "spline",
   dof = 4,
-  averaging_range = NULL
+  averaging_range = NULL,
+  iniyear = 1995,
+  irrigini = "Jaegermeyr_lpjcell"
 )
 }
 \arguments{
 \item{version}{Switch between LPJmL4 and LPJmL5}
-
-\item{iniyear}{Year of initialization}
 
 \item{climatetype}{Switch between different climate scenarios (default: "CRU_4")}
 
@@ -25,6 +24,10 @@ calcCommittedAgWaterUse(
 \item{dof}{Only specify if time=="spline": degrees of freedom needed for spline}
 
 \item{averaging_range}{Only specify if time=="average": number of time steps to average}
+
+\item{iniyear}{Year of initialization for cropland area}
+
+\item{irrigini}{Initialization data set for irrigation system initialization}
 }
 \value{
 magpie object in cellular resolution

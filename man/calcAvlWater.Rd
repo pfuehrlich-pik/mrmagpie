@@ -12,7 +12,8 @@ calcAvlWater(
   averaging_range = NULL,
   dof = NULL,
   harmonize_baseline = FALSE,
-  ref_year = "y2015"
+  ref_year = "y2015",
+  EFR = TRUE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ calcAvlWater(
 \item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
+
+\item{EFR}{Environmental flow requirements activated (TRUE) or not (FALSE)}
 }
 \value{
 magpie object in cellular resolution
