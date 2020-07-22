@@ -108,7 +108,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
     } else {
       # Time smoothing:
       x     <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
-                          harmonize_baseline=FALSE, time="raw")
+                          harmonize_baseline=FALSE, time="raw", irrig_requirement=irrig_requirement)
 
       # Smoothing data through average:
       if(time=="average"){
@@ -133,9 +133,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
     } else {
       # Load smoothed data
       baseline   <- calcOutput("Irrigation2", version=version, climatetype=harmonize_baseline, aggregate=FALSE,
-                             harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
+                             harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
       x          <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
-                             harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
+                             harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
       # Harmonize to baseline
       irrig_requirements <- toolHarmonize2Baseline(x=x, base=baseline, ref_year=ref_year, limited=TRUE, hard_cut=FALSE)
     }
