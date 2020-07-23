@@ -16,7 +16,7 @@
 #' @author Felicitas Beier, Jens Heinke
 #'
 #' @examples
-#' \dontrun{ calcOutput("Irrigation", aggregate = FALSE) }
+#' \dontrun{ calcOutput("Irrigation2", aggregate = FALSE) }
 #'
 #' @importFrom magpiesets findset
 #' @importFrom magclass setNames
