@@ -124,20 +124,87 @@ calcAvlWater <- function(selectyears="all",
     for (c in 1:NCELLS){
       # nat.discharge  = (inflow from upstream + runoff on cell) -  lake evaporation (of cell and upstream)
       discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)])   -  sum(lake_evap[c(upstreamcells[[c]],c)])
-      # av. water in cell = nat.discharge  - environmental flow requirements
-      avl_wat_nat[c]   <- discharge_nat[c] - EFR[c]
     }
 
+    #####################
     ### River Routing ###
+    #####################
+
+    ### River Routing 1: Non-agricultural uses ###
+    for (o in 1:max(calcorder)) {
+      cells <- which(calcorder==o)
+
+      for (scen in "ssp2"){
+        for (c in cells){
+          ## Water withdrawals cannot exceed availability (considering EFRs)
+          # av. water in cell = nat.discharge  - environmental flow requirements
+          avl_wat_nat[c]      <- discharge_nat[c] - EFR[c]
+          # actual withdrawal (non-agriculture) < av. water in cell for withdrawal
+          actual_withdrawal[c] <- avl_wat_nat[c] - NAg_ww[c,y,scen]
+          print(paste("non-agricultural water withdrawals exceed availability in", "xxx" ,"cells",sep=" ")) ### insert warning message
+          if (actual_withdrawal[c]<0) {
+            NAg_ww[c,y,scen] <- NAg_ww[c,y,scen] + (actual_withdrawal[c]*(-1))
+            NAg_wc[c,y,scen] <- NAg_wc[c,y,scen] + (actual_withdrawal[c]*(-1))*(NAg_wc[c,y,scen]/NAg_ww[c,y,scen])
+          }
+
+          ## Outflow from one cell to the next
+          # (Subtract local water consumption in current cell (committed ag. and non-ag. consumption))
+          discharge[c] <- discharge_nat[c] - NAg_wc[c,y,scen]
+
+
+          ## Water withdrawal accounting
+          # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
+          # NAC_c = ((withdrawal-runoff)/sum(Inflow))_(c+1) * outflow_c
+          # Note: which(nextcell==c): cells that go into current cell
+
+          # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
+          wat_dem_exceeding_runoff[c] <- NAg_ww[c,y,scen] - yearly_runoff[c]
+         ### wat_dem_exceeding_runoff[c] <- (NAg_ww[c,y,scen] + CAW_magpie[c]) - yearly_runoff[c] ###?????
+
+          # Share of water that is needed for downstream withdrawal (cannot be consumed in current cell)
+          if (nextcell!=-1) {
+            for (i in 1:length(which(nextcell==c))) {
+              # water requirement from
+              shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
+            }
+          } else if (nextcell==-1) {
+            shr_downstreamcell_requirement[c] <- 0
+          }
+          # Water that is needed for downstream withdrawal (not available for consumption in current cell)
+          shr_downstreamcell_requirement[c] <- max(shr_downstreamcell_requirement[c])
+          NAC_water[c] <- shr_downstreamcell_requirement[c==nextcell] * discharge[c]
+
+          # Water available for agricultural consumption in current cell
+          # avl.wat.cons. = avl.water     - non-ag.consumption  - not-available for consumption - envmtl. flows
+          avl_ag_cons[c]  <- avl_wat_nat[c] - NAg_wc[c,y,scen] - NAC_water[c] - EFR[c]
+          # Water available for agricultural withdrawal in current cell
+          avl_ag_wat[c]   <- avl_wat_nat[c] - NAg_wc[c,y,scen]
+
+          # Water reserved for each cell (from above calculations):
+          res_water[c] <- lake_evap[c] + EFR_magpie[c] + NAg_wc[c,y,scen] + NAC_water[c]
+        }
+      }
+    }
+
+    ### River Routing 2: Committed agricultural uses ###
     for (o in 1:max(calcorder)) {
       cells <- which(calcorder==o)
 
       for (scen in "ssp2"){
         for (c in cells){
 
+          ## Agricultural water withdrawals cannot exceed availability (considering EFRs and non-agricultural uses)
+          # actual withdrawal (agriculture) < av. water in cell for ag. withdrawal
+          actual_withdrawal_ag[c] <- avl_ag_wat[c] - CAW_magpie[c]
+          print(paste("non-agricultural water withdrawals exceed availability in", "xxx" ,"cells",sep=" ")) ### insert warning message
+          if (actual_withdrawal_ag[c]<0) {
+            CAW_magpie[c] <- CAW_magpie[c] + (actual_withdrawal_ag[c]*(-1))
+            CAC_magpie[c] <- CAC_magpie[c] + (actual_withdrawal_ag[c]*(-1))*(CAC_magpie[c]/CAW_magpie[c])
+          }
+
           ## Outflow from one cell to the next
-          # (Subtract local water consumption in current cell (committed ag. and non-ag. consumption))
-          discharge[c] <- avl_wat_nat[c] - NAg_wc[c,y,scen] - CAC_magpie[c] + EFR[c]
+          # (Subtract local water consumption in current cell (committed ag. consumption))
+          discharge[c] <- discharge[c] - CAC_magpie[c]
 
           ## Water withdrawal accounting
           # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
@@ -157,25 +224,28 @@ calcAvlWater <- function(selectyears="all",
             shr_downstreamcell_requirement[c] <- 0
           }
           # Water that is needed for downstream withdrawal (not available for consumption in current cell)
+          shr_downstreamcell_requirement[c] <- max(shr_downstreamcell_requirement[c])
           NAC_water[c] <- shr_downstreamcell_requirement[c==nextcell] * discharge[c]
-
-          # Water available for consumption in current cell
-          # avl.wat.cons. = avl.water      - non-ag.consumption - ag. consumption - not-available for consumption
-          avl_cons[c]    <- avl_wat_nat[c] - NAg_wc[c,y,scen] - CAC_magpie[c] - NAC_water[c]
-          # Water available for withdrawal in current cell
-          avl_wat[c] <- avl_wat_nat[c] - NAg_wc[c,y,scen]
 
           # Water reserved for each cell (from above calculations):
           res_water[c] <- lake_evap[c] + EFR_magpie[c] + NAg_wc[c,y,scen] + NAC_water[c]
 
+        }
+      }
+    }
 
-          # River basin runoff to be distributed across cells of river basin by algorithm (tba)
-          basin_runoff     <- dimSums(yearly_runoff,dim=1)
-          res_water_basin  <- dimSums(res_water, dim=1)
-          surlus_wat_basin <- basin_runoff + res_water_basin
+    ### Water allocation algorithm for "surplus water" across the river basin ###
+    # River basin runoff to be distributed across cells of river basin by algorithm (tba)
+    basin_runoff     <- dimSums(yearly_runoff,dim=1)
+    res_water_basin  <- dimSums(res_water, dim=1)
+    surlus_wat_basin <- basin_runoff + res_water_basin
 
-          ### Water allocation algorithm for "surplus water" across the river basin ###
-          ## Options:
+    for (o in 1:max(calcorder)) {
+      cells <- which(calcorder==o)
+
+      for (scen in "ssp2"){
+        for (c in cells){
+
           ## Discharge-weighted distribution
           if (algorithm=="discharge") {
             # Available water per cell
@@ -187,20 +257,11 @@ calcAvlWater <- function(selectyears="all",
             ## Yield improvement threshold & potential cropland
             ### ( Not yet implemented ) ###
           }
-
         }
       }
     }
-  }
 
-  #     # Sum the runoff in all basins and allocate it to the basin cells with discharge as weight
-  #     for(basin in unique(basin_code)){
-  #       basin_cells     <- which(basin_code==basin)
-  #       basin_runoff    <- colSums(monthly_runoff_magpie[basin_cells,,,drop=FALSE])
-  #       basin_discharge <- colSums(monthly_discharge_magpie[basin_cells,,,drop=FALSE])
-  #       for(month in dimnames(avl_water_month)[[3]]){
-  #         avl_water_month[basin_cells,,month] <- t(basin_runoff[,month]*t(monthly_discharge_magpie[basin_cells,,month])/basin_discharge[,month])
-  #       }
+  }
 
 
 #####################################################
