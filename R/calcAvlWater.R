@@ -129,6 +129,7 @@ calcAvlWater <- function(selectyears="all",
 
     ### River Routing 1: Non-agricultural uses ###
     for (o in 1:max(calcorder)) {
+      # Note: the calcorder ensures that the upstreamcells are calculated first
       cells <- which(calcorder==o)
 
       for (scen in "ssp2"){
@@ -138,7 +139,7 @@ calcAvlWater <- function(selectyears="all",
           avl_wat_nat[c]      <- discharge_nat[c] - EFR[c]
           # actual withdrawal (non-agriculture) < av. water in cell for withdrawal
           actual_withdrawal[c] <- avl_wat_nat[c] - NAg_ww[c,y,scen]
-          print(paste("non-agricultural water withdrawals exceed availability in", "xxx" ,"cells",sep=" ")) ### insert warning message
+          print(paste("Non-agricultural water withdrawals exceed availability in", length(which(is.na(actual_withdrawal))) ,"cells. Non-agricultural withdrawals and consumption reduced accordingly.",sep=" "))
           if (actual_withdrawal[c]<0) {
             NAg_ww[c,y,scen] <- NAg_ww[c,y,scen] + (actual_withdrawal[c]*(-1))
             NAg_wc[c,y,scen] <- NAg_wc[c,y,scen] + (actual_withdrawal[c]*(-1))*(NAg_wc[c,y,scen]/NAg_ww[c,y,scen])
@@ -147,7 +148,6 @@ calcAvlWater <- function(selectyears="all",
           ## Outflow from one cell to the next
           # (Subtract local water consumption in current cell (committed ag. and non-ag. consumption))
           discharge[c] <- discharge_nat[c] - NAg_wc[c,y,scen]
-
 
           ## Water withdrawal accounting
           # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
@@ -193,7 +193,7 @@ calcAvlWater <- function(selectyears="all",
           ## Agricultural water withdrawals cannot exceed availability (considering EFRs and non-agricultural uses)
           # actual withdrawal (agriculture) < av. water in cell for ag. withdrawal
           actual_withdrawal_ag[c] <- avl_ag_wat[c] - CAW_magpie[c]
-          print(paste("non-agricultural water withdrawals exceed availability in", "xxx" ,"cells",sep=" ")) ### insert warning message
+          print(paste("Agricultural water withdrawals exceed availability in", length(which(is.na(actual_withdrawal_ag))) ,"cells. Agricultural withdrawals and consumption reduced accordingly.",sep=" "))
           if (actual_withdrawal_ag[c]<0) {
             CAW_magpie[c] <- CAW_magpie[c] + (actual_withdrawal_ag[c]*(-1))
             CAC_magpie[c] <- CAC_magpie[c] + (actual_withdrawal_ag[c]*(-1))*(CAC_magpie[c]/CAW_magpie[c])
