@@ -108,27 +108,24 @@ calcAvlWater <- function(selectyears="all",
     discharge_nat <- numeric(NCELLS)
     # Discharge considering human uses
     discharge     <- numeric(NCELLS)
+    # Actual withdrawals considering availability
+    actual_withdrawal <- numeric(NCELLS)
     # Water available in cell
-    avl_wat_nat   <- numeric(NCELLS)
-    avl_wat       <- numeric(NCELLS)
-    # Water available for consumption
-    avl_cons      <- numeric(NCELLS)
+    avl_wat_nat   <- numeric(NCELLS) # naturally available water
+    avl_ag_wat    <- numeric(NCELLS) # water available for agricultural withdrawal
+    avl_ag_cons   <- numeric(NCELLS) # water available for agricultural consumption
     # Water not available for consumption
-    NA_cons       <- numeric(NCELLS)
-    # Surplus water (to be distributed across river basin)
-    surplus_wat   <- numeric(NCELLS)
+    NAC_water     <- numeric(NCELLS)
     # Water requirement from current cell for downstreamcell
-    wat_requirement_downstreamcell <- numeric(NCELLS)
+    wat_dem_exceeding_runoff       <- numeric(NCELLS)
     shr_downstreamcell_requirement <- numeric(NCELLS)
+    # Water reserved for particular cell
+    res_water[c] <- numeric(NCELLS)
 
     for (c in 1:NCELLS){
       # nat.discharge  = (inflow from upstream + runoff on cell) -  lake evaporation (of cell and upstream)
       discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)])   -  sum(lake_evap[c(upstreamcells[[c]],c)])
     }
-
-    #####################
-    ### River Routing ###
-    #####################
 
     ### River Routing 1: Non-agricultural uses ###
     for (o in 1:max(calcorder)) {
@@ -162,13 +159,9 @@ calcAvlWater <- function(selectyears="all",
          ### wat_dem_exceeding_runoff[c] <- (NAg_ww[c,y,scen] + CAW_magpie[c]) - yearly_runoff[c] ###?????
 
           # Share of water that is needed for downstream withdrawal (cannot be consumed in current cell)
-          if (nextcell!=-1) {
-            for (i in 1:length(which(nextcell==c))) {
-              # water requirement from
-              shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
-            }
-          } else if (nextcell==-1) {
-            shr_downstreamcell_requirement[c] <- 0
+          for (i in 1:length(which(nextcell==c))){
+            # water requirement from
+            shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
           }
           # Water that is needed for downstream withdrawal (not available for consumption in current cell)
           shr_downstreamcell_requirement[c] <- max(shr_downstreamcell_requirement[c])
@@ -187,6 +180,10 @@ calcAvlWater <- function(selectyears="all",
     }
 
     ### River Routing 2: Committed agricultural uses ###
+
+    # Actual agricultural withdrawals considering availability and non-agricultural consumption
+    actual_withdrawal_ag <- numeric(NCELLS)
+
     for (o in 1:max(calcorder)) {
       cells <- which(calcorder==o)
 
@@ -215,14 +212,11 @@ calcAvlWater <- function(selectyears="all",
           wat_dem_exceeding_runoff[c] <- (NAg_ww[c,y,scen] + CAW_magpie[c]) - yearly_runoff[c]
 
           # Share of water that is needed for downstream withdrawal (cannot be consumed in current cell)
-          if (nextcell!=-1) {
-            for (i in 1:length(which(nextcell==c))) {
-              # water requirement from
-              shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
-            }
-          } else if (nextcell==-1) {
-            shr_downstreamcell_requirement[c] <- 0
+          for (i in 1:length(which(nextcell==c))) {
+            # water requirement from
+            shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
           }
+
           # Water that is needed for downstream withdrawal (not available for consumption in current cell)
           shr_downstreamcell_requirement[c] <- max(shr_downstreamcell_requirement[c])
           NAC_water[c] <- shr_downstreamcell_requirement[c==nextcell] * discharge[c]
@@ -235,6 +229,7 @@ calcAvlWater <- function(selectyears="all",
     }
 
     ### Water allocation algorithm for "surplus water" across the river basin ###
+
     # River basin runoff to be distributed across cells of river basin by algorithm (tba)
     basin_runoff     <- dimSums(yearly_runoff,dim=1)
     res_water_basin  <- dimSums(res_water, dim=1)
