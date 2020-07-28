@@ -26,6 +26,10 @@ calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
                          harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE){
 
+  ##### Development phase #####
+  use_EFR1 <- TRUE
+  use_EFR2 <- TRUE
+
   #############################
   ####### Read in Data ########
   #############################
@@ -54,6 +58,19 @@ calcAvlWater <- function(selectyears="all",
   yearly_runoff <- as.array(collapseNames(yearly_runoff))
   years <- getYears(yearly_runoff)
 
+  # Yearly lake evapotranspiration (in mio. m^3 per year) [place holder]
+  lake_evap     <- new.magpie(1:NCELLS,years)
+  lake_evap[,,] <- 0
+  lake_evap     <- as.array(collapseNames(lake_evap))
+
+  # Precipitation/Runoff on lakes and rivers from LPJmL (in mio. m^3 per year) [place holder]
+  input_lake     <- new.magpie(1:NCELLS,years)
+  input_lake[,,] <- 0
+  input_lake     <- as.array(collapseNames(lake_evap))
+
+  # runoff (on land and water)
+  yearly_runoff <- yearly_runoff + input_lake
+
   # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
   if (EFR==TRUE){
     EFR_magpie <- calcOutput("EnvmtlFlow", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
@@ -66,11 +83,6 @@ calcAvlWater <- function(selectyears="all",
     stop("Specify whether environmental flows are activated or not via argument EFR")
   }
   EFR_magpie <- as.array(collapseNames(EFR_magpie))
-
-  # Yearly lake evapotranspiration (in mio. m^3/ha) [place holder]
-  lake_evap     <- new.magpie(1:NCELLS,years)
-  lake_evap[,,] <- 0
-  lake_evap     <- as.array(collapseNames(lake_evap))
 
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time="spline", dof=4, averaging_range=NULL, waterusetype="withdrawal", seasonality="total", aggregate=FALSE)
@@ -106,6 +118,7 @@ calcAvlWater <- function(selectyears="all",
   for (y in "y1995"){
     # Naturalized discharge
     discharge_nat <- numeric(NCELLS)
+    inflow <- numeric(NCELLS)
     # Discharge considering human uses
     discharge     <- numeric(NCELLS)
     # Actual withdrawals considering availability
@@ -115,63 +128,98 @@ calcAvlWater <- function(selectyears="all",
     avl_ag_wat    <- numeric(NCELLS) # water available for agricultural withdrawal
     avl_ag_cons   <- numeric(NCELLS) # water available for agricultural consumption
     # Water not available for consumption
-    NAC_water     <- numeric(NCELLS)
+    frac_NAg_fulfilled <- numeric(NCELLS)
     # Water requirement from current cell for downstreamcell
-    wat_dem_exceeding_runoff       <- numeric(NCELLS)
-    shr_downstreamcell_requirement <- numeric(NCELLS)
+    discharge_reserved <- numeric(NCELLS)
+    wat_dem_exceeding_runoff <- numeric(NCELLS)
+    frac_discharge_reserved  <- numeric(NCELLS)
+    frac_inflow_use          <- numeric(NCELLS)
     # Water reserved for particular cell
-    res_water[c] <- numeric(NCELLS)
+    res_water <- numeric(NCELLS)
 
     for (c in 1:NCELLS){
       # nat.discharge  = (inflow from upstream + runoff on cell) -  lake evaporation (of cell and upstream)
-      discharge_nat[c] <- sum(runoff[c(upstreamcells[[c]],c)])   -  sum(lake_evap[c(upstreamcells[[c]],c)])
+      discharge_nat[c] <- sum(yearly_runoff[c(upstreamcells[[c]],c)])  -  sum(lake_evap[c(upstreamcells[[c]],c)])
     }
 
-    ### River Routing 1: Non-agricultural uses ###
+    # Note: we assume (and have checked) that maintaining EFRs upstream is always sufficient to maintain local EFRs.
+    # No separate environmental river routing necessary. -> EFR constraint is strictly local!
+
+    ### Basin Closure Check (via Upstreamrouting)
+
+
+
+    ### River Routing 1: Downstreamrouting - Non-agricultural uses ###
     for (o in 1:max(calcorder)) {
       # Note: the calcorder ensures that the upstreamcells are calculated first
       cells <- which(calcorder==o)
 
       for (scen in "ssp2"){
         for (c in cells){
-          ## Water withdrawals cannot exceed availability (considering EFRs)
-          # av. water in cell = nat.discharge  - environmental flow requirements
-          avl_wat_nat[c]      <- discharge_nat[c] - EFR[c]
-          # actual withdrawal (non-agriculture) < av. water in cell for withdrawal
-          actual_withdrawal[c] <- avl_wat_nat[c] - NAg_ww[c,y,scen]
-          print(paste("Non-agricultural water withdrawals exceed availability in", length(which(is.na(actual_withdrawal))) ,"cells. Non-agricultural withdrawals and consumption reduced accordingly.",sep=" "))
-          if (actual_withdrawal[c]<0) {
-            NAg_ww[c,y,scen] <- NAg_ww[c,y,scen] + (actual_withdrawal[c]*(-1))
-            NAg_wc[c,y,scen] <- NAg_wc[c,y,scen] + (actual_withdrawal[c]*(-1))*(NAg_wc[c,y,scen]/NAg_ww[c,y,scen])
-          }
+
+          ### Water balance
+          # lake evap that can be fulfilled:
+          # (if water available: lake evaporation considered; if not: lake evap is reduced respectively)
+          lake_evap_new[c] <- min(lake_evap[c], inflow[c]+yearly_runoff[c])
+          # available water in cell
+          avl_wat_act[c]   <- inflow[c] + yearly_runoff[c] - lake_evap_new[c]
+
+          ## Water withdrawals must not exceed availability (considering EFRs)
+          frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-EFR_magpie[c], 0)/NAg_ww[c,y,scen], 1)
 
           ## Outflow from one cell to the next
-          # (Subtract local water consumption in current cell (committed ag. and non-ag. consumption))
-          discharge[c] <- discharge_nat[c] - NAg_wc[c,y,scen]
+          # (Subtract local water consumption in current cell (non-ag. consumption))
+          discharge[c]        <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
+          inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
 
-          ## Water withdrawal accounting
-          # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
-          # NAC_c = ((withdrawal-runoff)/sum(Inflow))_(c+1) * outflow_c
-          # Note: which(nextcell==c): cells that go into current cell
+        }
+      }
+    }
+
+    ## Water withdrawal accounting
+    for (u in max(calcorder):1) {
+      # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
+      # NAC_c = ((withdrawal-runoff)/sum(Inflow))_(c+1) * outflow_c
+      # Note: which(nextcell==c): cells that go into current cell
+
+      # lake evaporation distributed over runoff and inflows
+      frac_lake_evap <- lake_evap_new[c]/(yearly_runoff[c]+inflow[c])
+      # Water demand (withdrawal) in current cell coming from runoff on that cell:
+      wat_dem_fulfilled_runoff[c] <- min(NAg_ww[c,y,scen]*frac_NAg_fulfilled[c], yearly_runoff[c]*(1-frac_lake_evap))
+      # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
+      wat_dem_exceeding_runoff[c] <- NAg_ww[c,y,scen]*frac_NAg_fulfilled[c] - wat_dem_fulfilled_runoff[c]
+
+      EFR_required[c] <- EFR_magpie[c] - (NAg_ww[c,y,scen]-NAg_cc[c,y,scen])*frac_NAg_fulfilled[c]
+      if (discharge[c]>0){
+        frac_EFR <- min(EFR_required[c]/discharge[c], 1)
+      } else {
+        frac_EFR <- 0
+      }
+
+      # fraction required from inflow to cell
+      if (inflow[c]>0){
+        frac_inflow_use[c] <- wat_dem_exceeding_runoff[c]/inflow[c] + frac_EFR + frac_lake_evap
+      }
+
+      # Share of water that is needed for downstream withdrawal (cannot be consumed in current cell)
+      cells_trib <- which(nextcell==c)
+      for (ct in cells_trib) {
+        discharge_reserved[ct] <- discharge[ct] * frac_inflow_use[c]
+      }
+
+      runoff_reserved[c] <- wat_dem_fulfilled_runoff[c] + yearly_runoff[c]*(frac_lake_evap+frac_EFR)
+
+
 
           # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
-          wat_dem_exceeding_runoff[c] <- NAg_ww[c,y,scen] - yearly_runoff[c]
-         ### wat_dem_exceeding_runoff[c] <- (NAg_ww[c,y,scen] + CAW_magpie[c]) - yearly_runoff[c] ###?????
-
-          # Share of water that is needed for downstream withdrawal (cannot be consumed in current cell)
-          for (i in 1:length(which(nextcell==c))){
-            # water requirement from
-            shr_downstreamcell_requirement[which(nextcell==c)[i]] <- wat_dem_exceeding_runoff[c]/sum(discharge[which(nextcell==c)])
+          wat_dem_exceeding_runoff[c] <- pmax(NAg_ww[c,y,scen]*frac_NAg_fulfilled[c] - yearly_runoff[c], 0)
+          ## Note: possibly consider lake evap here (would increase water stress) --> requires alternative function!
+          # Currently: lake evap requirement not considered!
+          if (inflow[c]>0){
+            frac_inflow_use[c] <- wat_dem_exceeding_runoff[c]/inflow[c]
+            discharge_reserved[upstreamcells[[c]]] <- pmax(discharge_reserved[upstreamcells[[c]]], frac_inflow_use[c]*discharge[upstreamcells[[c]]])
           }
-          # Water that is needed for downstream withdrawal (not available for consumption in current cell)
-          shr_downstreamcell_requirement[c] <- max(shr_downstreamcell_requirement[c])
-          NAC_water[c] <- shr_downstreamcell_requirement[c==nextcell] * discharge[c]
 
-          # Water available for agricultural consumption in current cell
-          # avl.wat.cons. = avl.water     - non-ag.consumption  - not-available for consumption - envmtl. flows
-          avl_ag_cons[c]  <- avl_wat_nat[c] - NAg_wc[c,y,scen] - NAC_water[c] - EFR[c]
-          # Water available for agricultural withdrawal in current cell
-          avl_ag_wat[c]   <- avl_wat_nat[c] - NAg_wc[c,y,scen]
 
           # Water reserved for each cell (from above calculations):
           res_water[c] <- lake_evap[c] + EFR_magpie[c] + NAg_wc[c,y,scen] + NAC_water[c]
@@ -179,7 +227,7 @@ calcAvlWater <- function(selectyears="all",
       }
     }
 
-    ### River Routing 2: Committed agricultural uses ###
+    ### River Routing 3: Committed agricultural uses ###
 
     # Actual agricultural withdrawals considering availability and non-agricultural consumption
     actual_withdrawal_ag <- numeric(NCELLS)
