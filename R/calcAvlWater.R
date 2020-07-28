@@ -137,46 +137,99 @@ calcAvlWater <- function(selectyears="all",
     # Water reserved for particular cell
     res_water <- numeric(NCELLS)
 
-    for (c in 1:NCELLS){
-      # nat.discharge  = (inflow from upstream + runoff on cell) -  lake evaporation (of cell and upstream)
-      discharge_nat[c] <- sum(yearly_runoff[c(upstreamcells[[c]],c)])  -  sum(lake_evap[c(upstreamcells[[c]],c)])
-    }
-
     # Note: we assume (and have checked) that maintaining EFRs upstream is always sufficient to maintain local EFRs.
     # No separate environmental river routing necessary. -> EFR constraint is strictly local!
 
-    ### Basin Closure Check (via Upstreamrouting)
+    ### River Routing 0: Downstreamrouting - Natural flows ###
+    # Determine natural discharge
+    for (o in 1:max(calcorder)){
+      # Note: the calcorder ensures that the upstreamcells are calculated first
+      cells <- which(calcorder==o)
 
+      for (c in cells){
+        ### Natural water balance
+        # lake evap that can be fulfilled:
+        # (if water available: lake evaporation considered; if not: lake evap is reduced respectively)
+        lake_evap_new[c] <- min(lake_evap[c], inflow_nat[c]+yearly_runoff[c])
+        # discharge
+        discharge_nat[c] <- inflow_nat[c] + yearly_runoff[c] - lake_evap_new[c]
+        # inflow into nextcell
+        inflow_nat[nextcell[c]] <- inflow_nat[nextcell[c]] + discharge_nat[c]
+      }
+    }
 
+    # discharge reserved for cell
+    discharge_reserved <- pmin(discharge_nat, EFR_magpie)
 
-    ### River Routing 1: Downstreamrouting - Non-agricultural uses ###
+    ### River Routing 1: Upstreamrouting - Environment: EFR & lake_evap [Basin Closure Check] ###
+    for (u in max(calcorder):1){
+
+      # Tributary cells
+      cells_trib <- which(nextcell==c)
+      # EFRs that come from tributary cells
+      EFR_trib <- sum(discharge_reserved[cells_trib])
+      # EFR and lake evap that cannot be fulfilled by tributary inflows (need to come from other sources, see below)
+      EFR_add  <- discharge_reserved[c] - EFR_trib + lake_evap_new[c]
+
+      # EFRs and lake evap needed fulfilled by other sources than tributary inflows:
+      if (EFR_add>0){
+        # "fair" contribution of runoff to EFRs (proportional to share of EFR in discharge)
+        if (discharge_nat[c]>EFR_magpie[c]){
+          EFR_runoff <- yearly_runoff[c] * EFR_magpie[c]/discharge_nat[c]
+        } else {
+          EFR_runoff <- yearly_runoff[c]
+        }
+        if (EFR_runoff>=EFR_add){
+          # runoff that needs to stay untouched to fulfill EFRs
+          runoff_reserved[c] <- EFR_add
+        } else {
+          # runoff that needs to stay untouched to fulfill EFRs
+          runoff_reserved[c] <- EFR_runoff
+          # local EFR_runoff not sufficient to fulfill additional EFR
+          EFR_add <- EFR_add-EFR_runoff
+          # additional water available that can be used to fulfill EFR_add
+          water_avail <- sum(discharge_nat[cells_trib]-discharge_reserved[cells_trib]) + yearly_runoff[c] - EFR_runoff
+
+          # fraction of EFR_add that can be fulfilled by additionally available water
+          if (water_avail>EFR_add){
+            frac_add_EFR <- EFR_add/water_avail
+          } else {
+            frac_add_EFR <- 1
+          }
+
+          # Runoff reserved for EFRs
+          runoff_reserved[c] <- runoff_reserved[c] + (yearly_runoff[c]-EFR_runoff)*frac_add_EFR
+          # Discharge reserved for EFRs
+          if (length(cell_trib)>0){
+            discharge_reserved[cells_trib] <- discharge_reserved[cells_trib] + pmax(discharge_nat[cells_trib]-EFR_magpie[cells_trib], 0)*frac_add_EFR
+          }
+        }
+      }
+    }
+
+    ### River Routing 2: Downstreamrouting - Non-agricultural uses ###
     for (o in 1:max(calcorder)) {
       # Note: the calcorder ensures that the upstreamcells are calculated first
       cells <- which(calcorder==o)
 
       for (scen in "ssp2"){
         for (c in cells){
-
-          ### Water balance
-          # lake evap that can be fulfilled:
-          # (if water available: lake evaporation considered; if not: lake evap is reduced respectively)
-          lake_evap_new[c] <- min(lake_evap[c], inflow[c]+yearly_runoff[c])
+          ### Water balance taking non.-ag. uses into account
           # available water in cell
-          avl_wat_act[c]   <- inflow[c] + yearly_runoff[c] - lake_evap_new[c]
+          avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c]-lake_evap_new[c], 0)
 
           ## Water withdrawals must not exceed availability (considering EFRs)
-          frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-EFR_magpie[c], 0)/NAg_ww[c,y,scen], 1)
+          frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_reserved[c], 0)/NAg_ww[c,y,scen], 1)
 
           ## Outflow from one cell to the next
           # (Subtract local water consumption in current cell (non-ag. consumption))
           discharge[c]        <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
           inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
-
         }
       }
     }
 
-    ## Water withdrawal accounting
+    ### River Routing 3: Upstreamrouting - Water withdrawal accounting ###
     for (u in max(calcorder):1) {
       # (Water withdrawn downstream can be withdrawn upstream, but not consumed)
       # NAC_c = ((withdrawal-runoff)/sum(Inflow))_(c+1) * outflow_c
@@ -211,20 +264,18 @@ calcAvlWater <- function(selectyears="all",
 
 
 
-          # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
-          wat_dem_exceeding_runoff[c] <- pmax(NAg_ww[c,y,scen]*frac_NAg_fulfilled[c] - yearly_runoff[c], 0)
-          ## Note: possibly consider lake evap here (would increase water stress) --> requires alternative function!
-          # Currently: lake evap requirement not considered!
-          if (inflow[c]>0){
-            frac_inflow_use[c] <- wat_dem_exceeding_runoff[c]/inflow[c]
-            discharge_reserved[upstreamcells[[c]]] <- pmax(discharge_reserved[upstreamcells[[c]]], frac_inflow_use[c]*discharge[upstreamcells[[c]]])
-          }
-
-
-          # Water reserved for each cell (from above calculations):
-          res_water[c] <- lake_evap[c] + EFR_magpie[c] + NAg_wc[c,y,scen] + NAC_water[c]
+        # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
+        wat_dem_exceeding_runoff[c] <- pmax(NAg_ww[c,y,scen]*frac_NAg_fulfilled[c] - yearly_runoff[c], 0)
+        ## Note: possibly consider lake evap here (would increase water stress) --> requires alternative function!
+        # Currently: lake evap requirement not considered!
+        if (inflow[c]>0){
+          frac_inflow_use[c] <- wat_dem_exceeding_runoff[c]/inflow[c]
+          discharge_reserved[upstreamcells[[c]]] <- pmax(discharge_reserved[upstreamcells[[c]]], frac_inflow_use[c]*discharge[upstreamcells[[c]]])
         }
-      }
+
+
+        # Water reserved for each cell (from above calculations):
+        res_water[c] <- lake_evap[c] + EFR_magpie[c] + NAg_wc[c,y,scen] + NAC_water[c]
     }
 
     ### River Routing 3: Committed agricultural uses ###
