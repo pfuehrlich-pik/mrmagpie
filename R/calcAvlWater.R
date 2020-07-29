@@ -55,14 +55,14 @@ calcAvlWater <- function(selectyears="all",
   years <- getYears(yearly_runoff)
 
   # Yearly lake evapotranspiration (in mio. m^3 per year) [place holder]
-  lake_evap     <- new.magpie(1:NCELLS,years)
-  lake_evap[,,] <- 0
+  lake_evap     <- input_lake <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="evap_lake_lpjcell", aggregate=FALSE,
+                                            harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
   lake_evap     <- as.array(collapseNames(lake_evap))
 
   # Precipitation/Runoff on lakes and rivers from LPJmL (in mio. m^3 per year) [place holder]
-  input_lake     <- new.magpie(1:NCELLS,years)
-  input_lake[,,] <- 0
-  input_lake     <- as.array(collapseNames(lake_evap))
+  input_lake     <- input_lake <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="input_lake_lpjcell", aggregate=FALSE,
+                                             harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
+  input_lake     <- as.array(collapseNames(input_lake))
 
   # runoff (on land and water)
   yearly_runoff <- yearly_runoff + input_lake
