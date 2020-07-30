@@ -32,7 +32,7 @@ calcAvlWater <- function(selectyears="all",
 
   ### Read in river structure
   # Note: river structure derived from LPJmL input (drainage) [Later: implement readDrainage function]
-  data <- toolGetMapping("River_structure.rda",type="cell")
+  data <- toolGetMapping("River_structure_stn.rda",type="cell")
   for (i in 1:length(data)){
     assign(paste(names(data[[i]])), data[[i]][[1]])
   }
@@ -126,6 +126,10 @@ calcAvlWater <- function(selectyears="all",
   NAg_wc           <- as.array(collapseNames(NAg_wc))
   rm(NAg_wc_magpie)
 
+  # Harmonize non-agricultural consumption and withdrawals
+  NAg_ww <- pmax(NAg_ww, NAg_wc)
+  NAg_wc <- pmax(NAg_wc, 0.01*NAg_ww)
+
   # Committed agricultural uses (in mio. m^3 / yr) [for initialization year]
   CAU_magpie <- calcOutput("CommittedAgWaterUse",iniyear=1995,irrigini="Jaegermeyr_lpjcell",time="raw",dof=NULL,aggregate=FALSE)
   CAW_magpie <- as.array(collapseNames(dimSums(CAU_magpie[,,"withdrawal"],dim=3)))
@@ -149,7 +153,7 @@ calcAvlWater <- function(selectyears="all",
       frac_NAg_fulfilled <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       frac_CAg_fulfilled <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       # Water requirement from current cell for downstreamcell
-      discharge_allocated <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+      discharge_min <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       inflow_allocated    <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       runoff_allocated    <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       withdrawal_from_runoff <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
@@ -176,7 +180,7 @@ calcAvlWater <- function(selectyears="all",
       }
 
       # Discharge reserved for cell
-      discharge_allocated <- pmin(discharge_nat, EFR_magpie)
+      discharge_min <- pmin(discharge_nat, EFR_magpie)
 
       ### River Routing 1.2: Upstreamrouting - Environment: EFR & lake_evap [Basin Closure Check] ###
       for (u in max(calcorder):1){
@@ -187,9 +191,9 @@ calcAvlWater <- function(selectyears="all",
           # Tributary cells
           cells_trib <- which(nextcell==c)
           # EFRs that come from tributary cells
-          inflow_guaranteed <- sum(discharge_allocated[cells_trib])
+          inflow_guaranteed <- sum(discharge_min[cells_trib])
           # EFR and lake evap that cannot be fulfilled by tributary inflows (need to come from other sources, see below)
-          EFR_add  <- discharge_allocated[c] - inflow_guaranteed + lake_evap_new[c]
+          EFR_add  <- discharge_min[c] - inflow_guaranteed + lake_evap_new[c]
 
           # EFRs and lake evap needed fulfilled by other sources than tributary inflows:
           if (EFR_add>0){
@@ -208,7 +212,7 @@ calcAvlWater <- function(selectyears="all",
               # local EFR_runoff not sufficient to fulfill additional EFR
               EFR_add <- EFR_add-EFR_runoff
               # additional water available that can be used to fulfill EFR_add
-              water_avail <- sum(discharge_nat[cells_trib]-discharge_allocated[cells_trib]) + yearly_runoff[c,y] - EFR_runoff
+              water_avail <- sum(discharge_nat[cells_trib]-discharge_min[cells_trib]) + yearly_runoff[c,y] - EFR_runoff
 
               # fraction of EFR_add that can be fulfilled by additionally available water
               if (water_avail>EFR_add){
@@ -221,12 +225,12 @@ calcAvlWater <- function(selectyears="all",
               runoff_allocated[c] <- runoff_allocated[c] + (yearly_runoff[c,y]-EFR_runoff)*frac_add_EFR
               # Discharge reserved for EFRs and lake evap
               if (length(cells_trib)>0){
-                discharge_allocated[cells_trib] <- discharge_allocated[cells_trib] + (discharge_nat[cells_trib]-discharge_allocated[cells_trib])*frac_add_EFR
+                discharge_min[cells_trib] <- discharge_min[cells_trib] + (discharge_nat[cells_trib]-discharge_min[cells_trib])*frac_add_EFR
               }
             }
           }
           # Inflow reserved for EFR and lake evap
-          inflow_allocated[c] <- discharge_allocated[c] + lake_evap_new[c] - runoff_allocated[c]
+          inflow_allocated[c] <- EFR_magpie[c] + lake_evap_new[c] - runoff_allocated[c]
         }
       }
 
@@ -235,9 +239,17 @@ calcAvlWater <- function(selectyears="all",
         as.magpie(x[magclassdata$cellbelongings$LPJ_input.Index],spatial=1)
       }
 
-      discharge_allocated_nat <- discharge_allocated
-      inflow_allocated_nat    <- inflow_allocated
-      runoff_allocated_nat    <- runoff_allocated
+      discharge_min_EFR <- discharge_min
+      #inflow_allocated_nat    <- inflow_allocated
+      #runoff_allocated_nat    <- runoff_allocated
+
+      discharge_min <- discharge_min_EFR
+      # Discharge considering human uses
+      discharge   <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+      inflow      <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+      avl_wat_act <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+      # Water not available for consumption
+      frac_NAg_fulfilled <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
 
       ### River Routing 2.1: Downstreamrouting - Non-agricultural uses ###
       for (o in 1:max(calcorder)) {
@@ -249,19 +261,23 @@ calcAvlWater <- function(selectyears="all",
           # available water in cell
           avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
 
-          ## Water withdrawals must not exceed availability (considering EFRs)
-          frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_allocated[c], 0)/NAg_ww[c,y,scen], 1)
+          if (NAg_ww[c,y,scen]>0){
+            ## Water withdrawals must not exceed local EFRs
+            frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-EFR_magpie[c], 0)/NAg_ww[c,y,scen], 1)
+            if (frac_NAg_fulfilled[c]>0){
+              ## Water consumption must not exceed availability (considering downstream EFRs)
+              frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_min[c], 0)/(NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]), frac_NAg_fulfilled[c])
+            }
+          }
 
           ## Outflow from one cell to the next
           # (Subtract local water consumption in current cell (non-ag. consumption))
           discharge[c]        <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
-          inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
-          # Discharge resulting from return flows of non-ag. water consumption
-          discharge_allocated[c] <- discharge_allocated[c] + (NAg_ww[c,y,scen]-NAg_wc[c,y,scen])*frac_NAg_fulfilled[c]
+          if (nextcell[c]>0){
+            inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
+          }
         }
       }
-
-      #### CONTINUE HERE: In the following section NA's are created in discharge_allocated...
 
       ### River Routing 2.2: Upstreamrouting - Water withdrawal accounting ###
       for (u in max(calcorder):1) {
@@ -272,35 +288,36 @@ calcAvlWater <- function(selectyears="all",
         cells <- which(calcorder==u)
 
         for (c in cells){
+          water_needed <- EFR_magpie[c] + NAg_ww_magpie[c,y,scen]*frac_NAg_fulfilled[c] + lake_evap_new[c]
           # Water demand (withdrawal) in current cell coming from runoff on that cell:
           withdrawal_from_runoff <- min(NAg_ww[c,y,scen]*frac_NAg_fulfilled[c], yearly_runoff[c,y]-runoff_allocated[c])
-          runoff_allocated[c]    <- runoff_allocated[c] + withdrawal_from_runoff
+          #runoff_allocated[c]    <- runoff_allocated[c] + withdrawal_from_runoff
           # Water demand (withdrawal) in current cell that cannot be fulfilled by runoff on that cell, i.e. that needs to come from upstream cell:
           withdrawal_from_inflow <- NAg_ww[c,y,scen]*frac_NAg_fulfilled[c] - withdrawal_from_runoff
-          inflow_allocated[c]    <- inflow_allocated[c] + withdrawal_from_inflow
+          #inflow_allocated[c]    <- inflow_allocated[c] + withdrawal_from_inflow
 
           # Tributary cells
           cells_trib <- which(nextcell==c)
           # Water reserved in tributary cells
-          inflow_guaranteed <- sum(discharge_allocated[cells_trib])
+          inflow_guaranteed <- sum(discharge_min[cells_trib])
 
           if (inflow_allocated[c]>inflow_guaranteed){
             # Inflow to cell that can be allocated
-            inflow_avl        <- sum(discharge[cells_trib]-discharge_allocated[cells_trib])
+            inflow_avl        <- sum(discharge[cells_trib]-discharge_min[cells_trib])
             if (inflow_avl>0){
               frac_add_NAgww <- (inflow_allocated[c]-inflow_guaranteed)/inflow_avl
             } else {
               frac_add_NAgww <- 1
             }
             if (length(cells_trib)>0){
-              discharge_allocated[cells_trib] <- discharge_allocated[cells_trib] + (discharge[cells_trib]-discharge_allocated[cells_trib])*frac_add_NAgww
+              discharge_min[cells_trib] <- discharge_min[cells_trib] + (discharge[cells_trib]-discharge_min[cells_trib])*frac_add_NAgww
             }
           }
         }
       }
 
       ## Outputs:
-      discharge_allocated_NAg <- discharge_allocated
+      discharge_min_NAg <- discharge_min
       inflow_allocated_NAg    <- inflow_allocated
       runoff_allocated_NAg    <- runoff_allocated
 
@@ -316,14 +333,18 @@ calcAvlWater <- function(selectyears="all",
             avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
 
             ## Water withdrawals must not exceed availability (considering EFRs)
-            frac_CAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_allocated[c], 0)/CAW_magpie[c], 1)
+            if (CAW_magpie[c]>0){
+              frac_CAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_min[c], 0)/CAW_magpie[c], 1)
+            }
 
             ## Outflow from one cell to the next
             # (Subtract local water consumption in current cell (non-ag. consumption))
             discharge[c]        <- avl_wat_act[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
-            inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
+            if (nextcell[c]>0){
+              inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
+            }
             # Discharge resulting from return flows of committed ag. water consumption
-            discharge_allocated[c] <- discharge_allocated[c] + (CAW_magpie[c]-CAC_magpie[c])*frac_CAg_fulfilled[c]
+            discharge_min[c] <- discharge_min[c] + (CAW_magpie[c]-CAC_magpie[c])*frac_CAg_fulfilled[c]
           }
       }
 
@@ -341,18 +362,18 @@ calcAvlWater <- function(selectyears="all",
         # Tributary cells
         cells_trib <- which(nextcell==c)
         # Water reserved in tributary cells
-        inflow_guaranteed <- sum(discharge_allocated[cells_trib])
+        inflow_guaranteed <- sum(discharge_min[cells_trib])
 
         if (inflow_allocated[c]>inflow_guaranteed){
           # Inflow to cell that can be allocated
-          inflow_avl        <- sum(discharge[cells_trib]-discharge_allocated[cells_trib])
+          inflow_avl        <- sum(discharge[cells_trib]-discharge_min[cells_trib])
           if (inflow_avl>0){
             frac_add_CAgww <- (inflow_allocated[c]-inflow_guaranteed)/inflow_avl
           } else {
             frac_add_CAgww <- 1
           }
           if (length(cell_trib)>0){
-            discharge_allocated[cells_trib] <- discharge_allocated[cells_trib] + (discharge[cells_trib]-discharge_allocated[cells_trib])*frac_add_CAgww
+            discharge_min[cells_trib] <- discharge_min[cells_trib] + (discharge[cells_trib]-discharge_min[cells_trib])*frac_add_CAgww
           }
         }
       }
