@@ -70,8 +70,6 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
   EFR <- LFR+HFR
   # Reduce EFR to 50% of available water where it exceeds this threshold (according to Smakhtin 2004)
   EFR <- pmin(EFR, 0.5*mean_annual_discharge)
-  # Ratio of EFR to discharge
-  EFR <- ifelse(mean_annual_discharge>0, EFR/mean_annual_discharge, 0.5)
 
   ### Correct number of cells and transform to magpie object
   if (cells=="lpjcell"){
@@ -92,7 +90,7 @@ calcEnvmtlFlow <- function(version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2"
   return(list(
     x=EFR,
     weight=NULL,
-    unit="1",
-    description="Ratio of EFR to annual discharge",
+    unit="mio. m^3",
+    description="Environmental flow requirements per cell per year",
     isocountries=FALSE))
 }

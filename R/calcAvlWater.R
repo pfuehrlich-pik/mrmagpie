@@ -84,28 +84,6 @@ calcAvlWater <- function(selectyears="all",
   EFR_magpie <- as.array(collapseNames(EFR_magpie))
   EFR_magpie <- EFR_magpie[,1,1]
 
-  # Reference discharge for calculation of total EFRs
-  inflow_ref    <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
-  discharge_ref <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
-
-  # Reference River Routing
-  for (o in 1:max(calcorder)){
-    # Note: the calcorder ensures that the upstreamcells are calculated first
-    cells <- which(calcorder==o)
-
-    for (c in cells){
-      ### Natural water balance
-      # discharge
-      discharge_ref[c] <- inflow_ref[c] + yearly_runoff[c,"y1995"] - min(lake_evap[c,"y1995"], inflow_ref[c]+yearly_runoff[c,"y1995"])
-      # inflow into nextcell
-      if (nextcell[c]>0){
-        inflow_ref[nextcell[c]] <- inflow_ref[nextcell[c]] + discharge_ref[c]
-      }
-    }
-  }
-  EFR_magpie <- EFR_magpie*discharge_ref
-  rm(discharge_ref, inflow_ref)
-
   # Non-Agricultural Water Withdrawals (in mio. m^3 / yr) [smoothed]
   NAg_ww_magpie           <- calcOutput("NonAgWaterDemand", source="WATERGAP2020", time="spline", dof=4, averaging_range=NULL, waterusetype="withdrawal", seasonality="total", aggregate=FALSE)
   getCells(NAg_ww_magpie) <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
