@@ -119,6 +119,7 @@ calcAvlWater <- function(selectyears="all",
   #############################
   for (y in "y1995"){
     for (scen in "ssp2"){
+      ## Global river routing variables
       # Naturalized discharge
       discharge_nat <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       inflow_nat    <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
@@ -137,7 +138,7 @@ calcAvlWater <- function(selectyears="all",
       withdrawal_from_runoff <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
       withdrawal_from_inflow <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
 
-      ### River Routing 1.1: Downstreamrouting - Natural flows ###
+      ### River Routing 1: Natural flows ###
       # Determine natural discharge
       for (o in 1:max(calcorder)){
         # Note: the calcorder ensures that the upstreamcells are calculated first
@@ -213,10 +214,6 @@ calcAvlWater <- function(selectyears="all",
       }
 
       ## Outputs:
-      array_to_map <- function(x){
-        as.magpie(x[magclassdata$cellbelongings$LPJ_input.Index],spatial=1)
-      }
-
       discharge_min_EFR <- discharge_min
       #inflow_allocated_nat    <- inflow_allocated
       #runoff_allocated_nat    <- runoff_allocated
