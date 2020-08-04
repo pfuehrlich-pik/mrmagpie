@@ -214,7 +214,8 @@ calcAvlWater <- function(selectyears="all",
       discharge_min <- pmin(discharge_nat, EFR_magpie)
       # Discharge from cell to next considering human uses
       discharge <- discharge_nat
-      # Environmental flows cannot exceed natural discharge
+
+      # Correct EFRs: Environmental flows cannot exceed natural discharge
       EFR_magpie <- pmin(discharge_nat, EFR_magpie)
 
       ### River Routing 2: Non-agricultural uses considering local EFRs ###
@@ -226,20 +227,20 @@ calcAvlWater <- function(selectyears="all",
           # available water in cell
           avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
 
+          # discharge in cell not sufficient to fulfill requirements
           if (discharge[c]<discharge_min[c]){
-            # discharge in cell not sufficient to fulfill requirements: upstreamcells must release more water
-            # -> no more water can be used in this cell
+            # no more water can be used in this cell
             frac_NAg_fulfilled[c] <- 0
+            # more water needs to be released from upstream
             # -> necessary to restrict withdrawal upstream.... (reduce previously assigned consumption????)
             if (upstreamcells[c]>0){
               for (i in upstreamcells[c]){
                 discharge[i] <- discharge[i] + (discharge[c]-discharge_min[c])/length(which(nextcell==c))
               }
             } else {
+              # where does it come from? or reduce discharge_min?
               discharge[c] <- discharge_min[c]
             }
-          } else {
-            discharge[c] <- discharge_min[c]
           } else {
             if (NAg_ww[c,y,scen]>0){
               ## Water withdrawals must not exceed local EFRs
