@@ -223,31 +223,31 @@ calcAvlWater <- function(selectyears="all",
         cells <- which(calcorder==o)
 
         for (c in cells){
+          # available water in cell
+          avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
 
           if (discharge[c]<discharge_min[c]){
             # discharge in cell not sufficient to fulfill requirements: upstreamcells must release more water
-            # -> necessary to restrict withdrawal upstream....
+            # -> no more water can be used in this cell
+            frac_NAg_fulfilled[c] <- 0
+            # -> necessary to restrict withdrawal upstream.... (reduce previously assigned consumption????)
             if (upstreamcells[c]>0){
               for (i in upstreamcells[c]){
                 discharge[i] <- discharge[i] + (discharge[c]-discharge_min[c])/length(which(nextcell==c))
               }
             } else {
               discharge[c] <- discharge_min[c]
-              NAg_ww[c,y,scen] <- 0
             }
           } else {
             discharge[c] <- discharge_min[c]
-          }
-
-          # available water in cell
-          avl_wat_act[c] <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
-
-          if (NAg_ww[c,y,scen]>0){
-            ## Water withdrawals must not exceed local EFRs
-            frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-EFR_magpie[c], 0)/NAg_ww[c,y,scen], 1)
-            if (frac_NAg_fulfilled[c]>0){
-              ## Water consumption must not exceed availability
-              frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_min[c], 0)/(NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]), frac_NAg_fulfilled[c])
+          } else {
+            if (NAg_ww[c,y,scen]>0){
+              ## Water withdrawals must not exceed local EFRs
+              frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-EFR_magpie[c], 0)/NAg_ww[c,y,scen], 1)
+              if (frac_NAg_fulfilled[c]>0){
+                ## Water consumption must not exceed availability
+                frac_NAg_fulfilled[c] <- min(max(avl_wat_act[c]-discharge_min[c], 0)/(NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]), frac_NAg_fulfilled[c])
+              }
             }
           }
 
