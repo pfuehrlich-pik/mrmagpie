@@ -113,6 +113,10 @@ calcAvlWater <- function(selectyears="all",
   CAW_magpie <- as.array(collapseNames(dimSums(CAU_magpie[,,"withdrawal"],dim=3)))
   CAC_magpie <- as.array(collapseNames(dimSums(CAU_magpie[,,"consumption"],dim=3)))
   rm(CAU_magpie)
+  CAW_magpie <- as.array(collapseNames(CAW_magpie))
+  CAW_magpie <- CAW_magpie[,1,1]
+  CAC_magpie <- as.array(collapseNames(CAC_magpie))
+  CAC_magpie <- CAC_magpie[,1,1]
 
   #############################
   ####### River routing #######
@@ -155,45 +159,46 @@ calcAvlWater <- function(selectyears="all",
 
       # Minimum availability of water in river to fulfill local EFRs
       required_wat_min <- EFR_magpie
-      #required_wat_min <- pmin(discharge_nat, EFR_magpie)
-      #### Questions to Jens:
-      # (1) The logic of EFRs as calculated in calcEnvmtlFow (based on Smakthin) was that
-      # they are not >0.5*discharge. Should we reduce EFR_magpie to 0.5*discharge_nat here?
-      # Correct EFRs: Environmental flows cannot exceed natural discharge
-      #????EFR_magpie <- pmin(discharge_nat, EFR_magpie)
-      # (2) discharge_min cannot be higher than discharge_nat, correct? If EFRs are higher, still only
-      # available discharge reserved in discharge_min?
 
-      # Initialize discharge:
-      discharge <- discharge_nat
-
-      ### River routing 1.2: Water required for downstream EFR cannot be consumed upstream
+      ### River Routing 2: Non-agricultural uses considering local EFRs ###
       for (o in 1:max(calcorder)) {
         # Note: the calcorder ensures that the upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
+
           # available water in cell
-          avl_wat_act[c]  <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
+          avl_wat_act[c]  <- inflow[c]+yearly_runoff[c,y]-lake_evap_new[c]
 
           # available water in cell not sufficient to fulfill requirements
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
-            if (upstreamcells[c]>0){
-              for (i in upstreamcells[c]){
-                # note: not all upstreamcells have to release full amount of water
-                # assumption: equal share from tributaries
-                wat_req_downstream[i] <- discharge[i] + (avl_wat_act[c]-required_wat_min[c])/length(which(nextcell==c))
-                ##problem: what if from one tributary not enough available -> then more from other tributary necessary
+            if (length(upstreamcells[c])>0){
+              # correct upstream cells
+              # locally: cannot withdrawal
+              upstream_cons <- sum(NAg_wc[upstreamcells[[c]],y,scen]*frac_NAg_fulfilled[upstreamcells[[c]]])
+              if (upstream_cons>required_wat_min[c]-avl_wat_act[c]){
+                frac_NAg_fulfilled[upstreamcells[[c]]] <- (1-(required_wat_min[c]-avl_wat_act[c])/upstream_cons)*frac_NAg_fulfilled[upstreamcells[[c]]]
+                discharge[c] <- required_wat_min[c]
+              } else {
+                frac_NAg_fulfilled[upstreamcells[[c]]] <- 0
+                discharge[c] <- avl_wat_act[c]+upstream_cons
               }
-            # if cell doesn't have upstreamcells: required_wat_min has to be reduced (no additional water available)
-            } else {
-              required_wat_min[c] <- avl_wat_act[c]
             }
-          }
 
-          ## Outflow from one cell to the next
-          discharge[c] <- avl_wat_act[c]
+          # available water in cell is sufficient to fulfill requirements
+          } else {
+            # withdrawal is possible
+            # Non-agricultural withdrawals
+            if (NAg_ww[c,y,scen]>0){
+              ## Water withdrawal constraint:
+              frac_NAg_fulfilled[c] <- min((avl_wat_act[c]-required_wat_min[c])/NAg_ww[c,y,scen], 1)
+            }
+
+            ## Outflow from one cell to the next
+            # (Subtract local water consumption in current cell (non-ag. consumption))
+            discharge[c] <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
+          }
 
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
@@ -201,67 +206,65 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
-      ### River Routing 2.1: Non-agricultural uses considering local EFRs ###
-      for (o in 1:max(calcorder)) {
+      # Update minimum water required in cell:
+      required_wat_min <- required_wat_min + NAg_ww[,y,scen]*frac_NAg_fulfilled
+
+      ### Update discharge and inflow ###
+      inflow[] <- 0
+
+      for (o in 1:max(calcorder)){
         # Note: the calcorder ensures that the upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
-          # water available for non-agricultural withdrawal
-          avl_wat_wd[c]   <- max(avl_wat_act[c]-EFR_magpie[c], 0)
-          # water available for non-agricultural consumption
-          avl_wat_cons[c] <- max(avl_wat_wd[c]-wat_req_downstream[c], 0)
-
-          # Non-agricultural withdrawals
-          if (NAg_ww[c,y,scen]>0){
-            ## Water withdrawal constraint:
-            frac_NAg_fulfilled[c] <- min(avl_wat_wd[c]/NAg_ww[c,y,scen], 1)
-            if (frac_NAg_fulfilled[c]>0){
-              ## Water consumption constraint
-              frac_NAg_fulfilled[c] <- min(avl_wat_cons[c]/(NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]), frac_NAg_fulfilled[c])
-            }
-          }
-
-          # Update minimum water required in cell:
-          required_wat_min[c] <- required_wat_min[c] + NAg_ww[c,y,scen]*frac_NAg_fulfilled[c]
-
-          ## Outflow from one cell to the next
-          # (Subtract local water consumption in current cell (non-ag. consumption))
-          discharge[c] <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
-
+          # discharge
+          discharge[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
+          # inflow into nextcell
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
           }
         }
       }
 
-      ### River routing 2.2: Water required for downstream EFR or non-agricultural withdrawal cannot be consumed upstream
+      ### River Routing 3: Committed agricultural uses considering local EFRs and non-agricultural uses ###
       for (o in 1:max(calcorder)) {
         # Note: the calcorder ensures that the upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
+
           # available water in cell
-          avl_wat_act[c]  <- max(inflow[c]+yearly_runoff[c,y]-lake_evap_new[c], 0)
+          avl_wat_act[c]  <- inflow[c]+yearly_runoff[c,y]-lake_evap_new[c]
 
           # available water in cell not sufficient to fulfill requirements
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
-            if (upstreamcells[c]>0){
-              for (i in upstreamcells[c]){
-                # note: not all upstreamcells have to release full amount of water
-                # assumption: equal share from tributaries
-                wat_req_downstream[i] <- discharge[i] + (avl_wat_act[c]-required_wat_min[c])/length(which(nextcell==c))
-                ##problem: what if from one tributary not enough available -> then more from other tributary necessary
+            if (length(upstreamcells[c])>0){
+              # correct upstream cells
+              # locally: cannot withdrawal
+              upstream_cons <- sum(CAC_magpie[upstreamcells[[c]]]*frac_CAg_fulfilled[upstreamcells[[c]]])
+              if (upstream_cons>required_wat_min[c]-avl_wat_act[c]){
+                frac_CAg_fulfilled[upstreamcells[[c]]] <- (1-(required_wat_min[c]-avl_wat_act[c])/upstream_cons)*frac_CAg_fulfilled[upstreamcells[[c]]]
+                discharge[c] <- required_wat_min[c]
+              } else {
+                frac_CAg_fulfilled[upstreamcells[[c]]] <- 0
+                discharge[c] <- avl_wat_act[c]+upstream_cons
               }
-              # if cell doesn't have upstreamcells: required_wat_min has to be reduced (no additional water available)
-            } else {
-              required_wat_min[c] <- avl_wat_act[c]
             }
-          }
 
-          ## Outflow from one cell to the next
-          discharge[c] <- avl_wat_act[c]
+            # available water in cell is sufficient to fulfill requirements
+          } else {
+            # withdrawal is possible
+            # Non-agricultural withdrawals
+            if (CAW_magpie[c]>0){
+              ## Water withdrawal constraint:
+              frac_CAg_fulfilled[c] <- min((avl_wat_act[c]-required_wat_min[c])/CAW_magpie[c], 1)
+            }
+
+            ## Outflow from one cell to the next
+            # (Subtract local water consumption in current cell (committed ag. consumption))
+            discharge[c] <- avl_wat_act[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
+          }
 
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
@@ -269,34 +272,20 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
-      ### River Routing 3.1: Routing of "committed agricultural uses" taking previous withdrawals and EFRs into account ###
-      for (o in 1:max(calcorder)) {
+      # Update minimum water required in cell:
+      required_wat_min <- required_wat_min + CAW_magpie*frac_CAg_fulfilled
+
+      ### Update discharge and inflow ###
+      inflow[] <- 0
+
+      for (o in 1:max(calcorder)){
         # Note: the calcorder ensures that the upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
-          # water available for agricultural withdrawal
-          avl_wat_wd[c]   <- max(avl_wat_act[c]-EFR_magpie[c]-NAg_ww[c,y,scen]*frac_NAg_fulfilled[c], 0)
-          # water available for agricultural consumption
-          avl_wat_cons[c] <- max(avl_wat_wd[c]-wat_req_downstream[c], 0)
-
-          # Committed agricultural withdrawals
-          if (CAW_magpie[c]>0){
-            ## Water withdrawal constraint:
-            frac_CAg_fulfilled[c] <- min(avl_wat_wd[c]/CAW_magpie[c], 1)
-            if (frac_CAg_fulfilled[c]>0){
-              ## Water consumption constraint
-              frac_CAg_fulfilled[c] <- min(avl_wat_cons[c]/(CAC_magpie[c]*frac_CAg_fulfilled[c]), frac_CAg_fulfilled[c])
-            }
-          }
-
-          # Update minimum water required in cell:
-          required_wat_min[c] <- required_wat_min[c] + CAW_magpie[c]*frac_CAg_fulfilled[c]
-
-          ## Outflow from one cell to the next
-          # (Subtract local water consumption in current cell (ag. consumption))
-          discharge[c] <- avl_wat_act[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
-
+          # discharge
+          discharge[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
+          # inflow into nextcell
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
           }
