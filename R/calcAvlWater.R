@@ -145,8 +145,7 @@ calcAvlWater <- function(selectyears="all",
 
         for (c in cells){
           ### Natural water balance
-          # lake evap that can be fulfilled:
-          # (if water available: lake evaporation considered; if not: lake evap is reduced respectively)
+          # lake evap that can be fulfilled (if water available: lake evaporation considered; if not: lake evap is reduced respectively):
           lake_evap_new[c] <- min(lake_evap[c,y], inflow_nat[c]+yearly_runoff[c,y])
           # discharge
           discharge_nat[c] <- inflow_nat[c] + yearly_runoff[c,y] - lake_evap_new[c]
@@ -166,29 +165,32 @@ calcAvlWater <- function(selectyears="all",
         cells <- which(calcorder==o)
 
         for (c in cells){
-
           # available water in cell
           avl_wat_act[c]  <- inflow[c]+yearly_runoff[c,y]-lake_evap_new[c]
 
           # available water in cell not sufficient to fulfill requirements
+          # -> no more water can be withdrawn
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
+            # -> reduce non-agricultural water use in upstream cells
+            # -> locally: cannot withdraw
             if (length(upstreamcells[c])>0){
-              # correct upstream cells
-              # locally: cannot withdrawal
+              # upstream non-agricultural water consumption
               upstream_cons <- sum(NAg_wc[upstreamcells[[c]],y,scen]*frac_NAg_fulfilled[upstreamcells[[c]]])
               if (upstream_cons>required_wat_min[c]-avl_wat_act[c]){
+                # if missing water (difference) can be fulfilled by upstream consumption: reduce upstream consumption
                 frac_NAg_fulfilled[upstreamcells[[c]]] <- (1-(required_wat_min[c]-avl_wat_act[c])/upstream_cons)*frac_NAg_fulfilled[upstreamcells[[c]]]
                 discharge[c] <- required_wat_min[c]
               } else {
+                # if missing water (difference) cannot be fulfilled by upstream consumption: no upstream consumption
                 frac_NAg_fulfilled[upstreamcells[[c]]] <- 0
                 discharge[c] <- avl_wat_act[c]+upstream_cons
               }
             }
 
           # available water in cell is sufficient to fulfill requirements
+          # -> further withdrawals are possible
           } else {
-            # withdrawal is possible
             # Non-agricultural withdrawals
             if (NAg_ww[c,y,scen]>0){
               ## Water withdrawal constraint:
@@ -209,7 +211,7 @@ calcAvlWater <- function(selectyears="all",
       # Update minimum water required in cell:
       required_wat_min <- required_wat_min + NAg_ww[,y,scen]*frac_NAg_fulfilled
 
-      ### Update discharge and inflow ###
+      ### Interim routing: Update discharge and inflow ###
       inflow[] <- 0
 
       for (o in 1:max(calcorder)){
@@ -226,44 +228,50 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
+      # inflow needs to be set to 0 before every river routing
+      inflow[] <- 0
+
       ### River Routing 3: Committed agricultural uses considering local EFRs and non-agricultural uses ###
       for (o in 1:max(calcorder)) {
         # Note: the calcorder ensures that the upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
-
           # available water in cell
           avl_wat_act[c]  <- inflow[c]+yearly_runoff[c,y]-lake_evap_new[c]
 
           # available water in cell not sufficient to fulfill requirements
+          # -> no more water can be withdrawn
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
+            # -> reduce committed agricultural water use in upstream cells
+            # -> locally: cannot withdraw
             if (length(upstreamcells[c])>0){
-              # correct upstream cells
-              # locally: cannot withdrawal
+              # upstream committed agricultural water consumption:
               upstream_cons <- sum(CAC_magpie[upstreamcells[[c]]]*frac_CAg_fulfilled[upstreamcells[[c]]])
               if (upstream_cons>required_wat_min[c]-avl_wat_act[c]){
+                # if upstream_cons high enough to account for difference: reduce upstream consumption respectively
                 frac_CAg_fulfilled[upstreamcells[[c]]] <- (1-(required_wat_min[c]-avl_wat_act[c])/upstream_cons)*frac_CAg_fulfilled[upstreamcells[[c]]]
                 discharge[c] <- required_wat_min[c]
               } else {
+                # if upstream_cons not sufficient to account for difference: no water can be used upstream
                 frac_CAg_fulfilled[upstreamcells[[c]]] <- 0
                 discharge[c] <- avl_wat_act[c]+upstream_cons
               }
             }
 
-            # available water in cell is sufficient to fulfill requirements
+          # available water in cell is sufficient to fulfill requirements
+          # -> further withdrawal possible
           } else {
-            # withdrawal is possible
-            # Non-agricultural withdrawals
+            # Committed agricultural withdrawals
             if (CAW_magpie[c]>0){
               ## Water withdrawal constraint:
               frac_CAg_fulfilled[c] <- min((avl_wat_act[c]-required_wat_min[c])/CAW_magpie[c], 1)
             }
 
             ## Outflow from one cell to the next
-            # (Subtract local water consumption in current cell (committed ag. consumption))
-            discharge[c] <- avl_wat_act[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
+            # (Subtract local water consumption in current cell (committed ag. & non-agricultural consumption))
+            discharge[c] <- avl_wat_act[c] - CAC_magpie[c]*frac_CAg_fulfilled[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
           }
 
           if (nextcell[c]>0){
