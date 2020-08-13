@@ -159,6 +159,13 @@ calcAvlWater <- function(selectyears="all",
       # Minimum availability of water in river to fulfill local EFRs
       required_wat_min <- EFR_magpie
 
+      # Output reporting
+      ratio_routing1 <- required_wat_min/discharge_nat
+      ratio_routing1[which(required_wat_min!=0 & discharge_nat==0)]<-0
+      ratio_routing1[which(ratio_routing1>1)]<-1
+      ratio_routing1 <- toolConditionalReplace(ratio_routing1, conditions = c("is.na()","<0"), replaceby = 0)
+
+
       ### River Routing 2: Non-agricultural uses considering local EFRs ###
       for (o in 1:max(calcorder)) {
         # Note: the calcorder ensures that the upstreamcells are calculated first
@@ -227,6 +234,21 @@ calcAvlWater <- function(selectyears="all",
           }
         }
       }
+
+      # Output reporting
+      ratio_routing2 <- required_wat_min/discharge
+      which(is.na(ratio_routing2))
+      which(ratio_routing2==Inf)
+      ratio_routing2[which(required_wat_min!=0 & discharge==0)]<-0
+      ratio_routing2[which(ratio_routing2>1)]<-1
+      ratio_routing2 <- toolConditionalReplace(ratio_routing2, conditions = c("is.na()","<0"), replaceby = 0)
+
+      # # or: (????)
+      # ratio_routing2 <- required_wat_min/discharge_nat
+      # ratio_routing2[which(required_wat_min!=0 & discharge_nat==0)]<-0
+      # ratio_routing2[which(ratio_routing2>1)]<-1
+      # ratio_routing2 <- toolConditionalReplace(ratio_routing2, conditions = c("is.na()","<0"), replaceby = 0)
+
 
       # inflow needs to be set to 0 before every river routing
       inflow[] <- 0
@@ -299,7 +321,32 @@ calcAvlWater <- function(selectyears="all",
           }
         }
       }
+
+      # Output reporting
+      ratio_routing3 <- required_wat_min/discharge
+      which(is.na(ratio_routing3))
+      which(ratio_routing2==Inf)
+      ratio_routing3[which(required_wat_min!=0 & discharge==0)]<-0
+      ratio_routing3[which(ratio_routing3>1)]<-1
+      ratio_routing3 <- toolConditionalReplace(ratio_routing3, conditions = c("is.na()","<0"), replaceby = 0)
+
+
+      # How much water available for withdrawals per cell?
+
+      # How much water available for consumption per cell?
+
+
     }
+
+    frac_NAg_fulfilled_out <- array(data=NA,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+    frac_CAg_fulfilled_out <- array(data=NA,dim=NCELLS,dimnames=list(names(EFR_magpie)))
+
+    plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(frac_NAg_fulfilled),lowcol="red",highcol="white")
+    plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(frac_CAg_fulfilled),lowcol="red",highcol="white")
+    plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing1))
+    plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing2))
+    plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3))
+
 
     ### Water allocation algorithm for "surplus water" across the river basin ###
 
