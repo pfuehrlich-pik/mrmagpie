@@ -330,10 +330,13 @@ calcAvlWater <- function(selectyears="all",
       ratio_routing3[which(ratio_routing3>1)]<-1
       ratio_routing3 <- toolConditionalReplace(ratio_routing3, conditions = c("is.na()","<0"), replaceby = 0)
 
-
       # How much water available for withdrawals per cell?
+      wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
+      wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled # -EFR_magpie (???)
 
-      # How much water available for consumption per cell?
+      # How much water available for consumption per cell? (take downstream cells into account)
+      wat_reserved_consumption <- NAg_wc[,y,scen]*frac_NAg_fulfilled + CAC_magpie*frac_CAg_fulfilled
+      wat_avl_consumption      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
 
 
     }
@@ -350,10 +353,31 @@ calcAvlWater <- function(selectyears="all",
 
     ### Water allocation algorithm for "surplus water" across the river basin ###
 
-    # River basin runoff to be distributed across cells of river basin by algorithm (tba)
-    basin_runoff          <- dimSums(yearly_runoff,dim=1)
-    reserved_water_basin  <- dimSums(reserved_water, dim=1)
-    surplus_wat_basin     <- basin_runoff + reserved_water_basin
+    ## River basin runoff to be distributed across cells of river basin by algorithm
+    # initialize variables
+    cell_basin_mapping   <- array(data=0,dim=NCELLS)
+    basin_code           <- 1
+    basin_runoff         <- array(data=0,dim=length(unique(endcell)))
+    reserved_water_basin <- array(data=0,dim=length(unique(endcell)))
+
+    # river basin loop
+    for (b in unique(endcell)){
+      cell_basin_mapping[which(endcell==b)] <- basin_code
+      basin_runoff[basin_code]                  <- sum(yearly_runoff[which(endcell==b),y])
+      reserved_water_basin[basin_code]          <- sum(wat_reserved_consumption[which(endcell==b)])
+      #surplus_wat_basin[basin_code] <-  basin_runoff - reserved_water_basin
+
+      basin_code=basin_code+1
+
+      # for (c in 1:NCELLS){
+      #   avl_water[c] <- surplus_wat_basin * discharge[c]/sum(discharge[c]) + wat_reserved_consumption[c]
+      #
+      # }
+    }
+
+    range(basin_runoff)
+    range(basin_runoff-reserved_water_basin)
+
 
     for (o in 1:max(calcorder)) {
       cells <- which(calcorder==o)
@@ -365,6 +389,15 @@ calcAvlWater <- function(selectyears="all",
           if (algorithm=="discharge") {
             # Available water per cell
             avl_water[c] <- surplus_wat_basin * discharge[c]/sum(discharge[c]) + reserved_water[c]
+
+            # for(basin in unique(basin_code)){
+            #   basin_cells     <- which(basin_code==basin)
+            #   basin_runoff    <- colSums(monthly_runoff_magpie[basin_cells,,,drop=FALSE])
+            #   basin_discharge <- colSums(monthly_discharge_magpie[basin_cells,,,drop=FALSE])
+            #   for(month in dimnames(avl_water_month)[[3]]){
+            #     avl_water_month[basin_cells,,month] <- t(basin_runoff[,month]*t(monthly_discharge_magpie[basin_cells,,month])/basin_discharge[,month])
+            #   }
+            # }
           } else if (algorithm=="yieldimprovement") {
             ## Potential yield improvement maximization
             ### ( Not yet implemented ) ###
