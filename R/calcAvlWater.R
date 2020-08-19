@@ -332,11 +332,33 @@ calcAvlWater <- function(selectyears="all",
 
       # How much water available for withdrawals per cell?
       wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
-      wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled # -EFR_magpie (???)
+      wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
 
       # How much water available for consumption per cell? (take downstream cells into account)
       wat_reserved_consumption <- NAg_wc[,y,scen]*frac_NAg_fulfilled + CAC_magpie*frac_CAg_fulfilled
-      wat_avl_consumption      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
+      tmp <-  pmax(discharge - required_wat_min,0)
+
+      for (o in 1:max(calcorder)){
+        # Note: the calcorder ensures that the upstreamcells are calculated first
+        cells <- which(calcorder==o)
+
+        for (c in cells){
+          # available for consumption in current cell considering downstream cells
+          if (any(downstreamcells[[c]]!=numeric(0))){
+            wat_avl_consumption[c] <- min(tmp[downstreamcells[[c]]])
+          } else {
+            wat_avl_consumption[c] <- tmp[c]
+          }
+        }
+      }
+
+      # always relative to discharge_nat
+
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(wat_avl_consumption/discharge))
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(wat_avl_consumption))
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(log(wat_avl_consumption)))
+
+
 
 
     }
@@ -353,6 +375,7 @@ calcAvlWater <- function(selectyears="all",
 
     ### Water allocation algorithm for "surplus water" across the river basin ###
 
+    ## basin discharge (discharge at Mündung ist distributed... not river basin runoff)
     ## River basin runoff to be distributed across cells of river basin by algorithm
     # initialize variables
     cell_basin_mapping   <- array(data=0,dim=NCELLS)
