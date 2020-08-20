@@ -161,10 +161,24 @@ calcAvlWater <- function(selectyears="all",
 
       # Output reporting
       ratio_routing1 <- required_wat_min/discharge_nat
-      ratio_routing1[which(required_wat_min!=0 & discharge_nat==0)]<-0
+      ratio_routing1[which(required_wat_min==0 & discharge_nat==0)]<-NA
       ratio_routing1[which(ratio_routing1>1)]<-1
-      ratio_routing1 <- toolConditionalReplace(ratio_routing1, conditions = c("is.na()","<0"), replaceby = 0)
 
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing1))
+
+      # Downstream consideration
+      tmp <-  pmax(discharge_nat - required_wat_min,0)
+      wat_avl_consumption1 <- numeric(NCELLS)
+
+      for (c in 1:NCELLS){
+        # available for consumption in current cell considering downstream cells
+        wat_avl_consumption1[c] <- min(tmp[c(downstreamcells[[c]],c)])
+      }
+
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption1/discharge_nat)))
+
+      # Check
+      sum(required_wat_min-discharge_nat>1e-3)
 
       ### River Routing 2: Non-agricultural uses considering local EFRs ###
       for (o in 1:max(calcorder)) {
@@ -226,8 +240,12 @@ calcAvlWater <- function(selectyears="all",
         cells <- which(calcorder==o)
 
         for (c in cells){
+          # available water
+          avl_wat_act[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c]
+
           # discharge
-          discharge[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
+          discharge[c]   <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c]
+
           # inflow into nextcell
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
@@ -235,20 +253,26 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
+      # Check
+      sum(required_wat_min-avl_wat_act>1e-3)
+
       # Output reporting
-      ratio_routing2 <- required_wat_min/discharge
-      which(is.na(ratio_routing2))
-      which(ratio_routing2==Inf)
-      ratio_routing2[which(required_wat_min!=0 & discharge==0)]<-0
+      ratio_routing2 <- required_wat_min/avl_wat_act
+      ratio_routing2[which(required_wat_min==0 & avl_wat_act==0)]<-NA
       ratio_routing2[which(ratio_routing2>1)]<-1
-      ratio_routing2 <- toolConditionalReplace(ratio_routing2, conditions = c("is.na()","<0"), replaceby = 0)
 
-      # # or: (????)
-      # ratio_routing2 <- required_wat_min/discharge_nat
-      # ratio_routing2[which(required_wat_min!=0 & discharge_nat==0)]<-0
-      # ratio_routing2[which(ratio_routing2>1)]<-1
-      # ratio_routing2 <- toolConditionalReplace(ratio_routing2, conditions = c("is.na()","<0"), replaceby = 0)
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing2))
 
+      # Downstream consideration
+      tmp <-  pmax(avl_wat_act - required_wat_min,0)
+      wat_avl_consumption2 <- numeric(NCELLS)
+
+      for (c in 1:NCELLS){
+        # available for consumption in current cell considering downstream cells
+        wat_avl_consumption2[c] <- min(tmp[c(downstreamcells[[c]],c)])
+      }
+
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/discharge_nat)))
 
       # inflow needs to be set to 0 before every river routing
       inflow[] <- 0
@@ -313,8 +337,10 @@ calcAvlWater <- function(selectyears="all",
         cells <- which(calcorder==o)
 
         for (c in cells){
+          # available water
+          avl_wat_act[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c]
           # discharge
-          discharge[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
+          discharge[c] <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
           # inflow into nextcell
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
@@ -322,36 +348,34 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
+      # Check
+      sum(required_wat_min-avl_wat_act>1e-3)
+
       # Output reporting
-      ratio_routing3 <- required_wat_min/discharge
-      which(is.na(ratio_routing3))
-      which(ratio_routing2==Inf)
-      ratio_routing3[which(required_wat_min!=0 & discharge==0)]<-0
+      ratio_routing3 <- required_wat_min/avl_wat_act
+      ratio_routing3[which(required_wat_min==0 & avl_wat_act==0)]<-NA
       ratio_routing3[which(ratio_routing3>1)]<-1
-      ratio_routing3 <- toolConditionalReplace(ratio_routing3, conditions = c("is.na()","<0"), replaceby = 0)
 
-      # How much water available for withdrawals per cell?
-      wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
-      wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3))
 
-      # How much water available for consumption per cell? (take downstream cells into account)
-      wat_reserved_consumption <- NAg_wc[,y,scen]*frac_NAg_fulfilled + CAC_magpie*frac_CAg_fulfilled
-      tmp <-  pmax(discharge - required_wat_min,0)
+      # Downstream consideration
+      tmp <-  pmax(avl_wat_act - required_wat_min,0)
+      wat_avl_consumption3 <- numeric(NCELLS)
 
-      for (o in 1:max(calcorder)){
-        # Note: the calcorder ensures that the upstreamcells are calculated first
-        cells <- which(calcorder==o)
-
-        for (c in cells){
-          # available for consumption in current cell considering downstream cells
-          if (any(downstreamcells[[c]]!=numeric(0))){
-            wat_avl_consumption[c] <- min(tmp[downstreamcells[[c]]])
-          } else {
-            wat_avl_consumption[c] <- tmp[c]
-          }
-        }
+      for (c in 1:NCELLS){
+        # available for consumption in current cell considering downstream cells
+        wat_avl_consumption3[c] <- min(tmp[c(downstreamcells[[c]],c)])
       }
 
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/discharge_nat)))
+
+      # How much water available for withdrawals per cell?
+     # wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
+      #wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
+
+
+      ## Diff: wat_avl_consumption3-wat_avl_consumption2; wat_avl_consumption2-wat_avl_consumption1; wat_avl_consumption1-1)
+      # (as fraction to discharge_nat)
       # always relative to discharge_nat
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(wat_avl_consumption/discharge))
