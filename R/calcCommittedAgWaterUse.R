@@ -7,7 +7,7 @@
 #' @param averaging_range Only specify if time=="average": number of time steps to average
 #' @param dof             Only specify if time=="spline": degrees of freedom needed for spline
 #' @param iniyear  Year of initialization for cropland area
-#' @param irrigini Initialization data set for irrigation system initialization
+#' @param irrigini Initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")
 #'
 #' @import magclass
 #'

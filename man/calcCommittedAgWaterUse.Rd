@@ -27,7 +27,7 @@ calcCommittedAgWaterUse(
 
 \item{iniyear}{Year of initialization for cropland area}
 
-\item{irrigini}{Initialization data set for irrigation system initialization}
+\item{irrigini}{Initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
 }
 \value{
 magpie object in cellular resolution

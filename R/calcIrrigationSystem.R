@@ -6,7 +6,7 @@
 #' @author Felicitas Beier
 #'
 #' @examples
-#' \dontrun{ calcOutput("IrrigationSystem", aggregate = FALSE) }
+#' \dontrun{ calcOutput("IrrigationSystem",source="Jaegermeyr_lpjcell",aggregate = FALSE) }
 #'
 #' @import madrat
 #' @import magclass

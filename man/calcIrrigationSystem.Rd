@@ -16,7 +16,7 @@ magpie object in cellular resolution
 This function returns the irrigation system share initialization
 }
 \examples{
-\dontrun{ calcOutput("IrrigationSystem", aggregate = FALSE) }
+\dontrun{ calcOutput("IrrigationSystem",source="Jaegermeyr_lpjcell",aggregate = FALSE) }
 
 }
 \author{
