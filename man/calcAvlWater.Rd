@@ -33,7 +33,7 @@ calcAvlWater(
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 
-\item{EFR}{Environmental flow requirements activated (TRUE) or not (FALSE)}
+\item{EFR}{Switch for activation of environmental flow requirements (TRUE) or not (FALSE)}
 }
 \value{
 magpie object in cellular resolution
@@ -46,5 +46,5 @@ This function calculates water availability for MAgPIE retrieved from LPJmL usin
 
 }
 \author{
-Jens Heinke, Felicitas Beier
+Felicitas Beier, Jens Heinke
 }

@@ -1,7 +1,7 @@
 #' @title calcAvlWater
 #' @description This function calculates water availability for MAgPIE retrieved from LPJmL using a river routing algorithm for distribution of discharge across the river basin
 #'
-#' @param version Switch between LPJmL4 and LPJmL5
+#' @param version     Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
 #' @param time            Time smoothing: average, spline or raw (default)
 #' @param averaging_range only specify if time=="average": number of time steps to average
@@ -9,14 +9,14 @@
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
 #' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
-#' @param EFR Environmental flow requirements activated (TRUE) or not (FALSE)
+#' @param EFR Switch for activation of environmental flow requirements (TRUE) or not (FALSE)
 #'
 #' @import magclass
 #' @import madrat
 #' @importFrom mrcommons toolHarmonize2Baseline
 #'
 #' @return magpie object in cellular resolution
-#' @author Jens Heinke, Felicitas Beier
+#' @author Felicitas Beier, Jens Heinke
 #'
 #' @examples
 #' \dontrun{ calcOutput("AvlWater", aggregate = FALSE) }
@@ -31,7 +31,7 @@ calcAvlWater <- function(selectyears="all",
   #############################
 
   ### Read in river structure
-  # Note: river structure derived from LPJmL input (drainage) [Later: implement readDrainage function]
+  # Note: river structure derived from LPJmL input (drainage) [maybe later: implement readDrainage function]
   data <- toolGetMapping("River_structure_stn.rda",type="cell")
   for (i in 1:length(data)){
     assign(paste(names(data[[i]])), data[[i]][[1]])
@@ -43,7 +43,6 @@ calcAvlWater <- function(selectyears="all",
 
   ### LPJ-MAgPIE cell mapping
   #load("C:/Users/beier/Documents/doktorarbeit/MAgPIE_Water/River_Routing_Postprocessing/cells_magpie2lpj.Rda")
-  ### Question: Use LPJ_input.Index or LPJ.Index? What is the difference?
   magpie2lpj    <- magclassdata$cellbelongings$LPJ_input.Index
   lpj_cells_map <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
 
@@ -55,14 +54,14 @@ calcAvlWater <- function(selectyears="all",
   yearly_runoff     <- yearly_runoff[,,1]
   years <- getYears(yearly_runoff)
 
-  # Yearly lake evapotranspiration (in mio. m^3 per year) [place holder]
-  lake_evap     <- input_lake <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="evap_lake_lpjcell", aggregate=FALSE,
+  # Yearly lake evapotranspiration (in mio. m^3 per year)
+  lake_evap     <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="evap_lake_lpjcell", aggregate=FALSE,
                                             harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
   lake_evap     <- as.array(collapseNames(lake_evap))
   lake_evap     <- lake_evap[,,1]
 
-  # Precipitation/Runoff on lakes and rivers from LPJmL (in mio. m^3 per year) [place holder]
-  input_lake     <- input_lake <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="input_lake_lpjcell", aggregate=FALSE,
+  # Precipitation/Runoff on lakes and rivers from LPJmL (in mio. m^3 per year)
+  input_lake     <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="input_lake_lpjcell", aggregate=FALSE,
                                              harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
   input_lake     <- as.array(collapseNames(input_lake))
   input_lake     <- input_lake[,,1]
@@ -104,7 +103,7 @@ calcAvlWater <- function(selectyears="all",
   NAg_wc           <- as.array(collapseNames(NAg_wc))
   rm(NAg_wc_magpie)
 
-  # Harmonize non-agricultural consumption and withdrawals
+  # Harmonize non-agricultural consumption and withdrawals (withdrawals > consumption)
   NAg_ww <- pmax(NAg_ww, NAg_wc)
   NAg_wc <- pmax(NAg_wc, 0.01*NAg_ww)
 
@@ -140,7 +139,7 @@ calcAvlWater <- function(selectyears="all",
       ### River Routing 1.1: Natural flows ###
       # Determine natural discharge
       for (o in 1:max(calcorder)){
-        # Note: the calcorder ensures that the upstreamcells are calculated first
+        # Note: the calcorder ensures that upstreamcells are calculated first
         cells <- which(calcorder==o)
 
         for (c in cells){
@@ -159,15 +158,21 @@ calcAvlWater <- function(selectyears="all",
       # Minimum availability of water in river to fulfill local EFRs
       required_wat_min <- EFR_magpie
 
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+      #-#-#-#-# Output reporting #-#-#-#-#
+      # Check where water requirements exceed natural discharge
+      summary(required_wat_min-discharge_nat)        #### Question: how do we explain this?
+      check1 <- sum(required_wat_min-discharge_nat>1e-3)
+
       # Output reporting
       ratio_routing1 <- required_wat_min/discharge_nat
-      ratio_routing1[which(required_wat_min==0 & discharge_nat==0)]<-NA
-      ratio_routing1[which(ratio_routing1>1)]<-1
+      ratio_routing1[which(required_wat_min==0 & discharge_nat==0)] <- NA
+      ratio_routing1[which(ratio_routing1>1)] <- 1
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing1))
 
-      # Downstream consideration
-      tmp <-  pmax(discharge_nat - required_wat_min,0)
+      # Downstream constraint
+      tmp                  <- pmax(discharge_nat - required_wat_min,0)
       wat_avl_consumption1 <- numeric(NCELLS)
 
       for (c in 1:NCELLS){
@@ -176,9 +181,7 @@ calcAvlWater <- function(selectyears="all",
       }
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption1/discharge_nat)))
-
-      # Check
-      sum(required_wat_min-discharge_nat>1e-3)
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
       ### River Routing 2: Non-agricultural uses considering local EFRs ###
       for (o in 1:max(calcorder)) {
@@ -232,7 +235,7 @@ calcAvlWater <- function(selectyears="all",
       # Update minimum water required in cell:
       required_wat_min <- required_wat_min + NAg_ww[,y,scen]*frac_NAg_fulfilled
 
-      ### Interim routing: Update discharge and inflow ###
+      ### Interim routing: Update discharge and inflow considering known non-agricultural uses of river routing 2 ###
       inflow[] <- 0
 
       for (o in 1:max(calcorder)){
@@ -253,18 +256,20 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
-      # Check
-      sum(required_wat_min-avl_wat_act>1e-3)
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+      #-#-#-#-# Output reporting #-#-#-#-#
+      # Check whether number of cells where water requirements exceed availability has increased
+      if (sum(required_wat_min-avl_wat_act>1e-3)>check1) warning("River routing violation of water availability.")
 
       # Output reporting
       ratio_routing2 <- required_wat_min/avl_wat_act
-      ratio_routing2[which(required_wat_min==0 & avl_wat_act==0)]<-NA
-      ratio_routing2[which(ratio_routing2>1)]<-1
+      ratio_routing2[which(required_wat_min==0 & avl_wat_act==0)] <- NA
+      ratio_routing2[which(ratio_routing2>1)] <- 1
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing2))
 
       # Downstream consideration
-      tmp <-  pmax(avl_wat_act - required_wat_min,0)
+      tmp                  <-  pmax(avl_wat_act - required_wat_min,0)
       wat_avl_consumption2 <- numeric(NCELLS)
 
       for (c in 1:NCELLS){
@@ -273,8 +278,10 @@ calcAvlWater <- function(selectyears="all",
       }
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/discharge_nat)))
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/avl_wat_act)))
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
-      # inflow needs to be set to 0 before every river routing
+      # inflow needs to be set to 0 prior to every river routing (is recalculated by the routing)
       inflow[] <- 0
 
       ### River Routing 3: Committed agricultural uses considering local EFRs and non-agricultural uses ###
@@ -329,7 +336,7 @@ calcAvlWater <- function(selectyears="all",
       # Update minimum water required in cell:
       required_wat_min <- required_wat_min + CAW_magpie*frac_CAg_fulfilled
 
-      ### Update discharge and inflow ###
+      ### Interim routing: Update discharge and inflow considering known non-agricultural and committed agricultural uses of river routing 3 ###
       inflow[] <- 0
 
       for (o in 1:max(calcorder)){
@@ -340,7 +347,7 @@ calcAvlWater <- function(selectyears="all",
           # available water
           avl_wat_act[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c]
           # discharge
-          discharge[c] <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
+          discharge[c]   <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
           # inflow into nextcell
           if (nextcell[c]>0){
             inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
@@ -348,8 +355,10 @@ calcAvlWater <- function(selectyears="all",
         }
       }
 
-      # Check
-      sum(required_wat_min-avl_wat_act>1e-3)
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+      #-#-#-#-# Output reporting #-#-#-#-#
+      # Check whether number of cells where water requirements exceed availability has increased
+      if (sum(required_wat_min-avl_wat_act>1e-3)>check1) warning("River routing violation of water availability.")
 
       # Output reporting
       ratio_routing3 <- required_wat_min/avl_wat_act
@@ -359,7 +368,7 @@ calcAvlWater <- function(selectyears="all",
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3))
 
       # Downstream consideration
-      tmp <-  pmax(avl_wat_act - required_wat_min,0)
+      tmp                  <- pmax(avl_wat_act - required_wat_min,0)
       wat_avl_consumption3 <- numeric(NCELLS)
 
       for (c in 1:NCELLS){
@@ -368,25 +377,139 @@ calcAvlWater <- function(selectyears="all",
       }
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/discharge_nat)))
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/discharge)))
+      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/avl_wat_act)))
+      #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
-      # How much water available for withdrawals per cell?
-     # wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
-      #wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
+
+      ### Interim river routing outputs (required for allocation algorithm):
+      # Reserved water per cell
+      required_wat_min
+      discharge
 
 
-      ## Diff: wat_avl_consumption3-wat_avl_consumption2; wat_avl_consumption2-wat_avl_consumption1; wat_avl_consumption1-1)
-      # (as fraction to discharge_nat)
-      # always relative to discharge_nat
+      # River basin discharge (that can be allocated to cells within the basin)
+      cell_basin_mapping   <- array(data=0,dim=NCELLS)
+      basin_discharge      <- array(data=0,dim=length(unique(endcell)))
 
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(wat_avl_consumption/discharge))
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(wat_avl_consumption))
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(log(wat_avl_consumption)))
+      basin_code <- 1
+      for (b in unique(endcell)){
+        # mapping of cells to basins
+        cell_basin_mapping[which(endcell==b)] <- basin_code
+        # river basin discharge: discharge of endcell
+        basin_discharge[basin_code]           <- discharge[b]
+
+        basin_code <- basin_code+1
+      }
+
+
+      ################################################
+      ####### River basin discharge allocation #######
+      ################################################
+      ### Water allocation algorithm for basin discharge across the river basin ###
+      # Calculate potential yield gain per cell for proxy crops (maize, rapeseed, pulses)
+
+      # read in yields (in tons/ha)
+      #lpj_years <- seq(1995, 2095,by=5)
+      yields    <- calcOutput("Yields", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
+                              harmonize_baseline=FALSE, aggregate = FALSE, years=seq(1995, 2095,by=5))
+      ##### read in current year or 1995???? (I think: 1995) read in all years and select below, or only read in required year?
+      #### splined or raw? or flexible argument? harmonize_baseline TRUE or FALSE?
+      ##Error: Some years are missing in the data provided by function mrmagpie:::calcYields(...)(2100)!
+      #### Check yield function!!!!
+      proxy_yields_irrigated <- collapseNames(yields[,y,c("maiz","rapeseed","puls_pro")][,,"irrigated"])
+      proxy_yields_rainfed   <- collapseNames(yields[,y,c("maiz","rapeseed","puls_pro")][,,"rainfed"])
+
+
+      # read in land available for agricultural use (in mio. ha) and transform to ha
+      land <- collapseNames(calcOutput("AvlLandSi", aggregate=FALSE)[,,"si0"])*1000000
+
+      # potential yield gain (in tons per cell)
+      tmp <- (proxy_yields_irrigated - proxy_yields_rainfed)*land ##### do we want to calculate the yield gap in tons or in tons per ha?
+      ### !!!!!! In 5% of the cases there is a negative yield gap... How is that possible???? Maybe due to spline? better to use raw data and spline afterwards?
+      ### also when raw data used... (even higher: 11%) How is that possible?
+      ### explanation: change in growing period due to irrigation
+      ### cap to 0
+      tmp <- pmax(tmp,0)
+
+      # adjust dimensions of yield gain:
+      getCells(tmp)  <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
+      yield_gain     <- new.magpie(1:NCELLS,getYears(tmp),getNames(tmp))
+      yield_gain[,,] <- 0
+      yield_gain[paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep="."),,] <- tmp[,,]
+      getCells(yield_gain) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
+      yield_gain           <- as.array(collapseNames(yield_gain))
+      rm(tmp)
+
+      ### Required water for full irrigation per cell (in m^3)
+      ## ????? all crops or only proxy crops?
+      wat_req_full_ww <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="withdrawal", aggregate=FALSE)
+      wat_req_full_wc <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="consumption", aggregate=FALSE)
+
+      # additionally required discharge per cell to reach full irrigation
+      additional_discharge_ww <- required_wat_fullirrig_ww - CAW_magpie[c]*frac_CAg_fulfilled[c]
+      additional_discharge_wc <- required_wat_fullirrig_wc - CAC_magpie[c]*frac_CAg_fulfilled[c]
+
+
+      ranking <- 1
+      ## Cell-ranking in river basin
+      for (crop in getNames(yield_gain)) {
+        for (b in unique(cell_basin_mapping)){
+
+          cells    <- which(cell_basin_mapping==b)
+          #cells    <- which(endcell==b) if b runs over unique(endcell)
+          cellrank <- array(data=0,dim=length(cells))
+
+          if (any(yield_gain[cell_basin_mapping==b,,crop]!=0)) {
+            # assign rank to cell with highest yield gain:
+            cellrank[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])] <- ranking
+            # overwrite yield gain variable for identification of next highest rank:
+            yield_gain[cells[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])]] <- 0
+            # ranking for next cell
+            ranking    <- ranking+1
+
+            # insert average over ranking of maize, rapeseed, puls_pro somewhere...
+
+            ### Basin discharge allocation
+
+            # Required water for full irrigation - water already allocated for irrigation purposes
+
+            # Check basin_discharge sufficient to fulfill requirements
+            # if so: allocate to full irrigation
+            # if not: allocate left-over
+            # if no left-over: no additional discharge allocated
+
+            additional_discharge_ww[c] <- pmin(additional_discharge_ww[c],basin_discharge[b])
+
+            if (basin_discharge[b]!=0) {
+              # update discharge in cell
+              discharge[c] <- discharge[c] + additional_discharge_ww[c]
+              # left-over basin discharge after this allocation step:
+              basin_discharge[b] <- basin_discharge[b] - additional_discharge_ww[c]
+            }
+
+
+
+          }
+
+          ## write into output parameter
+        }
+      }
+
+
+
+      ######## REQUIRED OUTPUT FROM CALCAVLWATER:
+      # water available for agricultural consumption
+      # water available for agricultural withdrawal
+
 
 
 
 
     }
 
+
+    # Visualization:
     frac_NAg_fulfilled_out <- array(data=NA,dim=NCELLS,dimnames=list(names(EFR_magpie)))
     frac_CAg_fulfilled_out <- array(data=NA,dim=NCELLS,dimnames=list(names(EFR_magpie)))
 
@@ -397,33 +520,13 @@ calcAvlWater <- function(selectyears="all",
     plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3))
 
 
-    ### Water allocation algorithm for "surplus water" across the river basin ###
 
-    ## basin discharge (discharge at Mündung ist distributed... not river basin runoff)
-    ## River basin runoff to be distributed across cells of river basin by algorithm
-    # initialize variables
-    cell_basin_mapping   <- array(data=0,dim=NCELLS)
-    basin_code           <- 1
-    basin_runoff         <- array(data=0,dim=length(unique(endcell)))
-    reserved_water_basin <- array(data=0,dim=length(unique(endcell)))
 
-    # river basin loop
-    for (b in unique(endcell)){
-      cell_basin_mapping[which(endcell==b)] <- basin_code
-      basin_runoff[basin_code]                  <- sum(yearly_runoff[which(endcell==b),y])
-      reserved_water_basin[basin_code]          <- sum(wat_reserved_consumption[which(endcell==b)])
-      #surplus_wat_basin[basin_code] <-  basin_runoff - reserved_water_basin
 
-      basin_code=basin_code+1
 
-      # for (c in 1:NCELLS){
-      #   avl_water[c] <- surplus_wat_basin * discharge[c]/sum(discharge[c]) + wat_reserved_consumption[c]
-      #
-      # }
-    }
 
-    range(basin_runoff)
-    range(basin_runoff-reserved_water_basin)
+
+
 
 
     for (o in 1:max(calcorder)) {
@@ -457,6 +560,18 @@ calcAvlWater <- function(selectyears="all",
     }
 
   }
+
+
+
+  # How much water available for withdrawals per cell?
+  # wat_reserved_withdrawal <- NAg_ww[,y,scen]*frac_NAg_fulfilled + CAW_magpie*frac_CAg_fulfilled
+  #wat_avl_withdrawal      <- discharge + CAC_magpie*frac_CAg_fulfilled - EFR_magpie
+
+
+  ## Diff: wat_avl_consumption3-wat_avl_consumption2; wat_avl_consumption2-wat_avl_consumption1; wat_avl_consumption1-1)
+  # (as fraction to discharge_nat)
+  # always relative to discharge_nat
+
 
 
 #####################################################
