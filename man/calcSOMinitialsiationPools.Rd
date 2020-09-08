@@ -12,6 +12,12 @@ List of magpie object with results on country or cellular level, weight on cellu
 \description{
 calculates Soil Organic Matter Pool, accounting for the management history as initialisation to magpie
 }
+\examples{
+\dontrun{
+calcOutput("SOMinitialsiationPools")
+}
+
+}
 \seealso{
 \code{\link[mrcommons]{calcSOM}}
 }

@@ -40,7 +40,7 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE)
 
-  natveg       <- mbind(litc_natveg, vegc_natveg, soilc_natveg)
+  natveg       <- mbind(vegc_natveg, soilc_natveg, litc_natveg)
 
   if(version_backup == "LPJmL4+5") version <- "LPJmL5"
 
@@ -59,7 +59,9 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE)
 
-  grass        <- mbind(litc_grass, vegc_grass, soilc_grass)
+  grass           <- mbind(vegc_grass, soilc_grass, litc_grass)
+
+  getNames(grass) <- getNames(natveg)
 
 
   if(version_backup == "LPJmL4+5") version <- version_backup
@@ -69,16 +71,16 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
                               harmonize_baseline=harmonize_baseline, ref_year=ref_year,
                               aggregate=FALSE)
   #find cshare
-  cshare_released <- calcOutput("SOCLossShare", aggregate=FALSE, years="y1995")
+  cshare         <- calcOutput("SOCLossShare", aggregate=FALSE, years="y1995")
 
   ####################################################
   #Create the output file
   ####################################################
 
 
-  carbon_stocks <- new.magpie(cells_and_regions=getCells(soilc_natveg),
-                              years= getYears(natveg),
-                              names=c("vegc","soilc","litc"))
+  carbon_stocks <- new.magpie(cells_and_regions = getCells(natveg),
+                              years = getYears(natveg),
+                              names = getNames(natveg))
 
   carbon_stocks <- add_dimension(carbon_stocks, dim = 3.1, add = "landtype",
                                  nm = c("crop","past","forestry","primforest","secdforest", "urban", "other"))
@@ -91,7 +93,7 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
   #Factor 0.012 is based on the script subversion/svn/tools/carbon_cropland, executed at 30.07.2013
   carbon_stocks[,,"crop.vegc"]       <- 0.012*natveg[,,"vegc"]
   carbon_stocks[,,"crop.litc"]       <- 0 # does not make sense
-  carbon_stocks[,,"crop.soilc"]      <- (1-cshare_released) * topsoilc + (soilc_natveg-topsoilc)
+  carbon_stocks[,,"crop.soilc"]      <- cshare * topsoilc + (soilc_natveg-topsoilc)
 
   carbon_stocks[,,"past"]            <- grass
   carbon_stocks[,,"forestry"]        <- natveg
@@ -106,7 +108,7 @@ calcCarbon <- function(version="LPJmL4", climatetype="CRU_4", time="raw", averag
     stop("produced NA Carbon")
   }
 
-  weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
+  weight <- dimSums(calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6), dim=3)
 
   return(list(
     x=carbon_stocks,

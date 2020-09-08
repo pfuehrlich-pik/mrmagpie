@@ -36,8 +36,8 @@ calcNonAgWaterDemand <- function(selectyears="all", source="WATCH_ISIMIP_WATERGA
     if(time=="raw"){
       # Read in nonagricultural water demand:
       watdem_nonagr_WATERGAP      <- readSource("WATERGAP", convert="onlycorrect", subtype="WATERGAP2020")
-      watdem_nonagr_ISIMIP_hist   <- readSource("ISIMIP",   convert="onlycorrect", subtype="water_abstraction.past")
-      watdem_nonagr_ISIMIP_future <- readSource("ISIMIP",   convert="onlycorrect", subtype="water_abstraction.future")
+      watdem_nonagr_ISIMIP_hist   <- readSource("ISIMIPinputs",subtype="ISIMIP3b:water:histsoc.waterabstraction",convert="onlycorrect")
+      watdem_nonagr_ISIMIP_future <- readSource("ISIMIPinputs",subtype="ISIMIP3b:water:2015soc.waterabstraction",convert="onlycorrect")
 
       ### Combine datasets from different sources:
       # historical and future ISIMIP data:

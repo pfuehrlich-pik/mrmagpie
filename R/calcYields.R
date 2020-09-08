@@ -73,12 +73,14 @@ calcYields <- function(version="LPJmL5", climatetype="CRU_4", time="spline", ave
 
     FAOYields         <- dimSums(FAOproduction,dim=1)/dimSums(MAGarea, dim=1)
 
-    Calib <- new.magpie("GLO", getYears(yields),c(getNames(FAOYields), "pasture"), fill=1)
-    Calib[,getYears(FAOYields),"oilpalm"]   <- FAOYields[,,"oilpalm"]/FAOYields[,,"groundnut"]      # LPJmL proxy for oil palm is groundnut
-    Calib[,getYears(FAOYields),"cottn_pro"] <- FAOYields[,,"cottn_pro"]/FAOYields[,,"groundnut"]    # LPJmL proxy for cotton is groundnut
-    Calib[,getYears(FAOYields),"foddr"]     <- FAOYields[,,"foddr"]/FAOYields[,,"maiz"]             # LPJmL proxy for fodder is maize
-    Calib[,getYears(FAOYields),"others"]    <- FAOYields[,,"others"]/FAOYields[,,"maiz"]            # LPJmL proxy for others is maize
-    Calib[,getYears(FAOYields),"potato"]    <- FAOYields[,,"potato"]/FAOYields[,,"sugr_beet"]       # LPJmL proxy for potato is sugar beet
+    matchingFAOyears <- intersect(getYears(yields),getYears(FAOYields))
+    FAOYields        <- FAOYields[,matchingFAOyears,]
+    Calib            <- new.magpie("GLO", getYears(yields), c(getNames(FAOYields), "pasture"), fill=1)
+    Calib[,matchingFAOyears,"oilpalm"]   <- FAOYields[,,"oilpalm"]/FAOYields[,,"groundnut"]      # LPJmL proxy for oil palm is groundnut
+    Calib[,matchingFAOyears,"cottn_pro"] <- FAOYields[,,"cottn_pro"]/FAOYields[,,"groundnut"]    # LPJmL proxy for cotton is groundnut
+    Calib[,matchingFAOyears,"foddr"]     <- FAOYields[,,"foddr"]/FAOYields[,,"maiz"]             # LPJmL proxy for fodder is maize
+    Calib[,matchingFAOyears,"others"]    <- FAOYields[,,"others"]/FAOYields[,,"maiz"]            # LPJmL proxy for others is maize
+    Calib[,matchingFAOyears,"potato"]    <- FAOYields[,,"potato"]/FAOYields[,,"sugr_beet"]       # LPJmL proxy for potato is sugar beet
 
     # interpolate between FAO years
     Calib <- toolFillYears(Calib, getYears(yields))
@@ -88,11 +90,11 @@ calcYields <- function(version="LPJmL5", climatetype="CRU_4", time="spline", ave
   }
 
   #check again, what makes sense irrigation=FALSE/TRUE?
-  crop_area_weight <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6)
+  crop_area_weight <- dimSums(calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6), dim=3)
 
   return(list(
     x=yields,
-    weight=NULL,
+    weight=crop_area_weight,
     unit="t per ha",
     description="Yields in tons per hectar for different crop types.",
     isocountries=FALSE))

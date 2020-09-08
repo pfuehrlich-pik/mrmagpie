@@ -13,7 +13,7 @@
 calcAfforestationMask <-function(subtype){
 
   x      <- readSource("AfforestationMask",subtype=subtype, convert="onlycorrect")
-  weight <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6)
+  weight <- dimSums(calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6), dim=3)
 
   return(list(
     x=x,

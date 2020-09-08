@@ -19,7 +19,7 @@ Read files related to the training and optimization of the LPJml emulators.
 \examples{
 
 \dontrun{
-readSource("GrassYldEmu", subtype = "GrassYldEmu:20f33a2280.weights", convert="onlycorrect")
+readSource("GrassYldEmu", subtype = "109325f71e.inputs", convert="onlycorrect")
 }
 
 }

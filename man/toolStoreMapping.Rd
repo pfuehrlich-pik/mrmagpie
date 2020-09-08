@@ -4,17 +4,26 @@
 \alias{toolStoreMapping}
 \title{Tool: StoreMapping}
 \usage{
-toolStoreMapping(map, name, type = NULL, error.existing = TRUE)
+toolStoreMapping(
+  map,
+  name,
+  type = NULL,
+  where = "mappingfolder",
+  error.existing = TRUE
+)
 }
 \arguments{
 \item{map}{mapping data to be stored.}
 
 \item{name}{File name of the mapping file. Supported file types are currently csv (, or ; separated)
-and rda (which needs to have the data stored with the object name "data"!). Use code{\link{toolConvertMapping}}
-to convert between both formats}
+and rds. Use code{\link{toolConvertMapping}} to convert between both formats}
 
-\item{type}{Mapping type (e.g. "regional", "cell", or "sectoral"). Can be set to NULL if file
-is not stored in a type specific subfolder}
+\item{type}{[only relevant when written to mapping folder, otherwise ignored!] Mapping type
+(e.g. "regional", "cell", or "sectoral"). Can be set to NULL if file is not stored in a type
+specific subfolder}
+
+\item{where}{vector of locations the file should be written to. Available options are "mappingfolder"
+(madrat mapping folder), "output" (madrat output folder) and "local" (current directory)}
 
 \item{error.existing}{Boolean which decides whether an error is returned if
 the mapping file does not exist or not.}

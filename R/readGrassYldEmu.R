@@ -7,7 +7,7 @@
 #' @examples
 #'
 #' \dontrun{
-#' readSource("GrassYldEmu", subtype = "GrassYldEmu:20f33a2280.weights", convert="onlycorrect")
+#' readSource("GrassYldEmu", subtype = "109325f71e.inputs", convert="onlycorrect")
 #' }
 #'
 #' @import madrat
@@ -39,6 +39,16 @@ readGrassYldEmu <-
       max_grass <- unlist(readRDS(file.path(folder,file)))
       nyears <- length(max_grass)/59199
       matrix <- matrix(max_grass, ncol = nyears)
+      magpie <- as.magpie(matrix, spatial = 1, temporal = 2)
+
+      x <-  collapseNames(magpie)
+      getNames(x) <- subtype
+    }
+
+    if (subtype == "max_lsu") {
+      max_lsu <- unlist(readRDS(file.path(folder,file)))
+      nyears <- length(max_lsu)/59199
+      matrix <- matrix(max_lsu, ncol = nyears)
       magpie <- as.magpie(matrix, spatial = 1, temporal = 2)
 
       x <-  collapseNames(magpie)

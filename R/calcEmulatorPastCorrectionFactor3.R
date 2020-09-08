@@ -19,17 +19,17 @@
 #' @export
 #'
 
-# # #development
+# #development
 # library(mrcommons)
 # library(stringi)
 # library(tidyr)
 # library(magpiesets)
 # library(mrmagpie)
-# setConfig(forcecache=F)
+# setConfig(forcecache=T)
 # setConfig(globalenv = T)
 # setwd("C:/magpie_inputdata/sources")
 
-calcEmuPastCorrectFactor <-
+calcEmuPastCorrectFactor3 <-
   function(model = "f41f19be67", GCMModel = "HadGEM2", rcp = "rcp85") {
 
     past <- findset("past")
@@ -71,13 +71,15 @@ calcEmuPastCorrectFactor <-
     #############################
     ### Disaggregation weights###
     #############################
+#
+#     potential_grass_cell         <- MAGPasturearea * max_grass
+     mapping                      <- toolGetMapping(name = "CountryToCellMapping.csv", type = "cell")
+#     potential_grass_country      <- toolAggregate(potential_grass_cell, rel = mapping, from = "celliso", to = "iso", partrel = F)
+#     potential_grass_country_cell <- toolAggregate(potential_grass_country, rel = mapping, from = "iso", to = "celliso", partrel = F)
+#     grass_distribution           <- potential_grass_cell / potential_grass_country_cell
+#     grass_distribution[is.na(grass_distribution)] <- 0
 
-    potential_grass_cell         <- MAGPasturearea * max_grass
-    mapping                      <- toolGetMapping(name = "CountryToCellMapping.csv", type = "cell")
-    potential_grass_country      <- toolAggregate(potential_grass_cell, rel = mapping, from = "celliso", to = "iso", partrel = F)
-    potential_grass_country_cell <- toolAggregate(potential_grass_country, rel = mapping, from = "iso", to = "celliso", partrel = F)
-    grass_distribution           <- potential_grass_cell / potential_grass_country_cell
-    grass_distribution[is.na(grass_distribution)] <- 0
+    GLW3 <- readSource("GLW3", subtype = "Da", convert="onlycorrect")
 
     #############################
     ### FAO livestock Numbers ###
@@ -95,24 +97,38 @@ calcEmuPastCorrectFactor <-
     fbask_pasture_fraction <- fbask_rum_pasture / fbask_rum_total
 
     #################################
+    ### FAO past. demand cellular ###
+    #################################
+
+    FAO_pasture_demand                           <- calcOutput("FAOmassbalance", aggregate = F)[, , "dm"][, , "feed"][, past, "pasture"]
+    FAO_pasture_demand                           <- FAO_pasture_demand[unique(mapping$iso)] * 1e6
+    FAO_pasture_demand_cell                      <- toolAggregate(FAO_pasture_demand, rel = mapping, from = "iso", to = "celliso", partrel = F, weight = GLW3)
+    FAO_pasture_demand_cell[MAGPasturearea == 0] <- 0 # Setting to zero pasture demand in countries with no pasture area
+
+    FAO_LSU_demand                               <- FAO_pasture_demand/(8.9/1000*365)
+    FAO_LSU_demand_cell                          <- toolAggregate(FAO_LSU_demand, rel = mapping, from = "iso", to = "celliso", partrel = F, weight = GLW3)
+    FAO_LSU_demand_cell[MAGPasturearea == 0] <- 0 # Setting to zero pasture demand in countries with no pasture area
+
+    #################################
     ### Calculating LSU/ha        ###
     #################################
 
-    conversion_rate_LSU            <- c(0.894, 0.1) # source calulation from EU statistics https://docs.google.com/spreadsheets/d/1SZAAVl1SLwrrK6j329tq5zo1VZhfFtxUHTmsGQKYCCk/edit#gid=0
-    conversion_rate_LSU            <- as.magpie(conversion_rate_LSU)
-    dimnames(conversion_rate_LSU)  <- list("region", "year", c("large", "small"))
-
-    livestock_FAO_scaled           <- livestock_FAO * conversion_rate_LSU * fbask_pasture_fraction
-    livestock_FAO_scaled           <- dimSums(livestock_FAO_scaled[, , c(1, 4)])
-    getYears(livestock_FAO_scaled) <- past
-    livestock_FAO_scaled           <- livestock_FAO_scaled[unique(mapping$iso)]
-    livestock_cell                 <- toolAggregate(livestock_FAO_scaled, rel = mapping, from = "iso", to = "celliso", partrel = F, weight = grass_distribution)
+    # conversion_rate_LSU            <- c(0.894, 0.1) # source calulation from EU statistics https://docs.google.com/spreadsheets/d/1SZAAVl1SLwrrK6j329tq5zo1VZhfFtxUHTmsGQKYCCk/edit#gid=0
+    # conversion_rate_LSU            <- as.magpie(conversion_rate_LSU)
+    # dimnames(conversion_rate_LSU)  <- list("region", "year", c("large", "small"))
+    #
+    # livestock_FAO_scaled           <- livestock_FAO * conversion_rate_LSU * fbask_pasture_fraction
+    # livestock_FAO_scaled           <- dimSums(livestock_FAO_scaled[, , c(1, 4)])
+    # getYears(livestock_FAO_scaled) <- past
+    # livestock_FAO_scaled           <- livestock_FAO_scaled[unique(mapping$iso)]
+    livestock_cell                   <- toolAggregate(FAO_LSU_demand, rel = mapping, from = "iso", to = "celliso", partrel = F, weight = GLW3)
 
     livestock_cell[MAGPasturearea == 0] <- 0
     lsu_ha                              <- livestock_cell / (MAGPasturearea * 1e6)
     lsu_ha[is.nan(lsu_ha)]              <- 0
     lsu_ha[lsu_ha > 2.5]                <- 2.5
     lsu_ha_scaled                       <- scale(lsu_ha, center = center["lsu"], scale = scale["lsu"])
+
 
     #################################
     ### Predicted grass yield     ###
@@ -131,15 +147,6 @@ calcEmuPastCorrectFactor <-
     pred_pasture_productivity_mag         <- as.magpie(pred_pasture_productivity_mag[, c(3, 1, 2)])
     pred_pasture_production               <- pred_pasture_productivity_mag * (MAGPasturearea * 1e6)
     pred_pasture_production               <- round(pred_pasture_production, 2)
-
-    #################################
-    ### FAO past. demand cellular ###
-    #################################
-
-    FAO_pasture_demand                           <- calcOutput("FAOmassbalance", aggregate = F)[, , "dm"][, , "feed"][, past, "pasture"]
-    FAO_pasture_demand                           <- FAO_pasture_demand[unique(mapping$iso)] * 1e6
-    FAO_pasture_demand_cell                      <- toolAggregate(FAO_pasture_demand, rel = mapping, from = "iso", to = "celliso", partrel = F, weight = grass_distribution)
-    FAO_pasture_demand_cell[MAGPasturearea == 0] <- 0 # Setting to zero pasture demand in countries with no pasture area
 
     #################################
     ### Correction factor         ###

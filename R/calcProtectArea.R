@@ -19,7 +19,7 @@ calcProtectArea <- function(){
   protect_share           <- readSource("HalfEarth", convert="onlycorrect")
   getNames(protect_share) <- "HalfEarth"
   # Land area (in Mha):
-  magpie_land_area <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995", round=6, file="avl_land_t_0.5.mz")
+  magpie_land_area <- calcOutput("LanduseInitialisation", aggregate=FALSE, cellular=TRUE, land="fao", input_magpie=TRUE, years="y1995")
   magpie_land_area <- dimSums(magpie_land_area, dim=3)
   # Land area to be protected by 2050 (in Mha)
   protect_area     <- protect_share * magpie_land_area

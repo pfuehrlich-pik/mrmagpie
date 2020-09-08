@@ -10,6 +10,7 @@
 #' @examples
 #' \dontrun{
 #' calcOutput("SOMinitialsiationPools")
+#' }
 #'
 
 calcSOMinitialsiationPools<-function(){

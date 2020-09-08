@@ -23,7 +23,7 @@ p <- new.magpie(cells_and_regions = dimnames(slr)[[1]], years=past, names="perce
 slr <- mbind(p,slr)
 slr <- toolHoldConstantBeyondEnd(slr)
 
-weight <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6)
+weight <- dimSums(calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=FALSE, aggregate = FALSE, years="y1995", round=6), dim=3)
 
 return(list(
   x=slr,

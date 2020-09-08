@@ -109,7 +109,7 @@ calcIrrigation <- function(selectyears="all",
   }
 
   # Clustering weight:
-  cropland_total   <- calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE, years="y1995", round=6)
+  cropland_total   <- dimSums(calcOutput("Croparea", sectoral="kcr", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE, years="y1995", round=6), dim=3.2)
   crop_area_weight <- collapseNames(cropland_total[,,"irrigated"]) + rainfedweight * collapseNames(cropland_total[,,"rainfed"])
 
   return(list(

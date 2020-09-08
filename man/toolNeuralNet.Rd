@@ -10,7 +10,7 @@ toolNeuralNet(inputs_ml, weights)
 \item{inputs_ml}{Neural Network input features properly scaled with
 the scale and center attributes of the scaled training set.}
 
-\item{weights}{The learned weights and biases in a list format as outputed by the function \code{\link{get_weights}}. This function works with magpie objects}
+\item{weights}{The learned weights and biases in a list format as outputed by the function \code{keras::get_weights()}. This function works with magpie objects}
 }
 \value{
 The evaluated result of the neural network for the \code{input_ml} parameter.
