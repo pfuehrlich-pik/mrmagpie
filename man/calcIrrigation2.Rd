@@ -42,7 +42,7 @@ calcIrrigation2(
 magpie object in cellular resolution
 }
 \description{
-This function calculates irrigation water withdrawal based on LPJmL plant blue water consumption and different irrigation efficiencies
+This function calculates irrigation water requirements based on LPJmL plant blue water consumption and different irrigation efficiencies
 }
 \examples{
 \dontrun{ calcOutput("Irrigation2", aggregate = FALSE) }

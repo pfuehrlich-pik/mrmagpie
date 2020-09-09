@@ -39,7 +39,7 @@ calcFullIrrigationRequirement(
 magpie object in cellular resolution
 }
 \description{
-This function calculates the requirements for full irrigation per cell per crop
+This function calculates the water requirements for full irrigation per cell per crop given potentially available land
 }
 \examples{
 \dontrun{ calcOutput("FullIrrigationRequirement", aggregate=FALSE) }

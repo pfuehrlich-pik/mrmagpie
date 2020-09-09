@@ -41,12 +41,12 @@ calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4",
   if (cells=="magpiecell") {
     yield_gain <- tmp
   } else if (cells=="lpjcell") {
+    lpj_cells_map  <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
     getCells(tmp)  <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
     yield_gain     <- new.magpie(1:NCELLS,getYears(tmp),getNames(tmp))
     yield_gain[,,] <- 0
     yield_gain[paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep="."),,] <- tmp[,,]
     getCells(yield_gain) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
-    yield_gain           <- as.array(collapseNames(yield_gain))
   } else {
     stop("Cells argument not supported. Please select lpjcell for 67420 cells or magpiecell for 59199 cells")
   }

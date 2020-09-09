@@ -10,6 +10,7 @@
 #' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
 #' @param EFR Switch for activation of environmental flow requirements (TRUE) or not (FALSE)
+#' @param irrigationsystem irrigation system to be used for river basin discharge allocation algorithm
 #'
 #' @import magclass
 #' @import madrat
@@ -24,7 +25,7 @@
 
 calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
-                         harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE){
+                         harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE, irrigationsystem="surface"){
 
   #############################
   ####### Read in Data ########
@@ -381,7 +382,12 @@ calcAvlWater <- function(selectyears="all",
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/avl_wat_act)))
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
-      # River basin discharge (that can be allocated to cells within the basin)
+
+      # Correction of discharge (a few cells have very low negative values, set them to 0)
+      #### ???? necessary here, or better later????
+      discharge <- pmax(discharge,0)
+
+      ### River basin discharge (that can be allocated to cells within the basin)
       cell_basin_mapping   <- array(data=0,dim=NCELLS)
       basin_discharge      <- array(data=0,dim=length(unique(endcell)))
 
@@ -394,6 +400,7 @@ calcAvlWater <- function(selectyears="all",
 
         basin_code <- basin_code+1
       }
+      rm(basin_code)
 
 
       ################################################
@@ -402,18 +409,15 @@ calcAvlWater <- function(selectyears="all",
       ### Water allocation algorithm for basin discharge across the river basin ###
       # Read in potential yield gain per cell for proxy crops (maize, rapeseed, pulses)
 
-      ### -------- Note: this section will be put into separate function for better readability -----------###
+      ### -------- Note: this section will be put into separate function for better readability (see: calcYieldImprovementPotential) -----------###
       # read in yields (in tons/ha)
       #lpj_years <- seq(1995, 2095,by=5)
       yields    <- calcOutput("Yields", version="LPJmL5", climatetype=climatetype, time="spline", dof=4,
                               harmonize_baseline=FALSE, aggregate=FALSE, years=seq(1995, 2095,by=5))
-      ##### read in current year or 1995???? (I think: 1995) read in all years and select below, or only read in required year?
-      #### splined or raw? or flexible argument? harmonize_baseline TRUE or FALSE?
-      ##Error: Some years are missing in the data provided by function mrmagpie:::calcYields(...)(2100)!
-      #### Check yield function!!!!
+      ##### read in current year (all years: past and future) or 1995????  read in all years and select below, or only read in required year?
+      #### splined or raw? or flexible argument? harmonize_baseline TRUE or FALSE? (now or after yield potential calculation?)
       proxy_yields_irrigated <- collapseNames(yields[,y,c("maiz","rapeseed","puls_pro")][,,"irrigated"])
       proxy_yields_rainfed   <- collapseNames(yields[,y,c("maiz","rapeseed","puls_pro")][,,"rainfed"])
-
 
       # read in land available for agricultural use (in mio. ha) and transform to ha
       land <- collapseNames(calcOutput("AvlLandSi", aggregate=FALSE)[,,"si0"])*1000000
@@ -421,7 +425,7 @@ calcAvlWater <- function(selectyears="all",
       # potential yield gain (in tons per cell)
       tmp <- (proxy_yields_irrigated - proxy_yields_rainfed)*land ##### do we want to calculate the yield gap in tons or in tons per ha?
       ### !!!!!! In 5% of the cases there is a negative yield gap... How is that possible???? Maybe due to spline? better to use raw data and spline afterwards?
-      ### also when raw data used... (even higher: 11%) How is that possible?
+      ### also when raw data used... (even higher: 11%) How is that possible? --> better use already splined data
       ### explanation: change in growing period due to irrigation
       ### cap to 0
       tmp <- pmax(tmp,0)
@@ -435,96 +439,114 @@ calcAvlWater <- function(selectyears="all",
       yield_gain           <- as.array(collapseNames(yield_gain))
       rm(tmp)
 
-      calcOutput("YieldImprovementPotential",version=version, climatetype=climatetype,"y1995", cells="lpjcell")
+      yield_gain <- calcOutput("YieldImprovementPotential",version=version, climatetype=climatetype,selectyears="y1995", cells="lpjcell")
+      yield_gain <- as.array(collapseNames(yield_gain))
+      yield_gain <- yield_gain[,,c("maiz","rapeseed","puls_pro")]
       #### ----------------------------------------------------------- ####
 
       ### Required water for full irrigation per cell (in m^3)
       ## ????? all crops or only proxy crops? --> here: only proxy crops (later in MAgPIE: all crops)
-      required_wat_fullirrig_ww <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="withdrawal", aggregate=FALSE)
-      required_wat_fullirrig_wc <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="consumption", aggregate=FALSE)
+      required_wat_fullirrig_ww <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="withdrawal", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
+      required_wat_fullirrig_wc <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, irrig_requirement="consumption", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
 
-      # additionally required discharge per cell to reach full irrigation
-      additional_discharge_ww <- required_wat_fullirrig_ww - CAW_magpie[c]*frac_CAg_fulfilled[c]
-      additional_discharge_wc <- required_wat_fullirrig_wc - CAC_magpie[c]*frac_CAg_fulfilled[c]
-
-      ranking <- 1
       ## Cell-ranking in river basin
-      for (crop in getNames(yield_gain)) {
-        for (b in unique(cell_basin_mapping)){
+      for (b in unique(cell_basin_mapping)) {
+
+        cellrank <-  NULL
+        for (crop in getNames(yield_gain)) {
 
           cells    <- which(cell_basin_mapping==b)
           #cells    <- which(endcell==b) if b runs over unique(endcell)
-          cellrank <- array(data=0,dim=length(cells))
+          cropcellrank <- array(data=0,dim=length(cells))
+          additional_discharge <- array(data=0,dim=length(cells))
 
           if (any(yield_gain[cell_basin_mapping==b,,crop]!=0)) {
-            # assign rank to cell with highest yield gain:
-            cellrank[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])] <- ranking
-            # overwrite yield gain variable for identification of next highest rank:
-            yield_gain[cells[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])]] <- 0
-            # ranking for next cell
-            ranking    <- ranking+1
 
-            # insert average over ranking of maize, rapeseed, puls_pro somewhere...
-
-            ### Basin discharge allocation ###
-
-            ## Question: do we really want to distribute ALL of river basin discharge (will there still be something left to flow into the sea?)
-
-            if (allocationrule=="optimization") {
-
-              # Required water for full irrigation - water already allocated for irrigation purposes
-
-              # Check basin_discharge sufficient to fulfill requirements
-              # if so: allocate to full irrigation
-              # if not: allocate left-over
-              # if no left-over: no additional discharge allocated
-
-              additional_discharge_ww[c] <- pmin(additional_discharge_ww[c],basin_discharge[b])
-
-              if (basin_discharge[b]!=0) {
-                # update discharge in cell
-                discharge[c] <- discharge[c] + additional_discharge_ww[c]
-                # left-over basin discharge after this allocation step:
-                basin_discharge[b] <- basin_discharge[b] - additional_discharge_ww[c]
-              }
-
-            } else if (allocationrule=="upstreamfirst") {
-
-              # Only consider cells where irrigation potential > 0
-
-              # Allocate full irrigation requirements to most upstream cell first (calcorder)
-
-            } else if (allocationrule=="equality") {
-
-              # Repeat optimization algorithm several times
-              # Instead of full irrigation, only up to 20% are allocated to most efficient cell
-              # Repeat until all river basin discharge is allocated
-
-            } else {
-              stop("Please choose allocation rule for river basin discharge allocation algorithm")
+            ranking <- 1
+            for (i in 1:sum(yield_gain[cell_basin_mapping==b,,crop]!=0)) {
+              # assign rank to cell with highest yield gain:
+              cropcellrank[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])] <- ranking
+              # overwrite yield gain variable for identification of next highest rank:
+              yield_gain[cells[yield_gain[cell_basin_mapping==b,,crop]==max(yield_gain[cell_basin_mapping==b,,crop])],,crop] <- 0
+              # ranking for next cell
+              ranking    <- ranking+1
             }
 
-
-
-
-
+            # insert average over ranking of maize, rapeseed, puls_pro somewhere...
           }
+          cellrank[[crop]] <- cropcellrank
+          rm(cropcellrank)
+        }
+
+        meancellrank <- rowMeans(cbind(cellrank$maiz, cellrank$rapeseed, cellrank$puls_pro)) ### is there a more generic way? (avoid naming crops, so that can flexibly change crops)
+        meancellrank[meancellrank==0] <- NA
+        #### how to treat cells that have same rank after averaging rank
+
+        ############################
+        ### Allocation Algorithm ###
+        ############################
+          if (allocationrule=="optimization") {
+
+            if (any(!is.na(meancellrank))) {
+              for (i in 1:sum(!is.na(meancellrank))) {
+
+                # highest ranked cell:
+                c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]
+                bc <- which(meancellrank==min(meancellrank,na.rm=TRUE))
+                # overwrite to get next highest ranked cell in the next round:
+                meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))] <- NA
+
+                # Check basin_discharge sufficient to fulfill requirements
+                # if so: allocate to full irrigation
+                # if not: allocate left-over
+                # if no left-over: no additional discharge allocated
+
+                # additionally required discharge per cell to reach full irrigation (considering already reserved fraction)
+                additional_discharge_ww <- required_wat_fullirrig_ww - CAW_magpie[c]*frac_CAg_fulfilled[c]
+                additional_discharge_wc <- required_wat_fullirrig_wc - CAC_magpie[c]*frac_CAg_fulfilled[c]
+
+                # mean of additional discharge required for proxy crops
+                additional_discharge[bc] <- pmin(mean(additional_discharge_ww[c,,irrigationsystem]),basin_discharge[b])
+                additional_discharge[bc] <- pmin(mean(additional_discharge_wc[c,,irrigationsystem]),basin_discharge[b])
+                ### ???? which additional discharge should be allocated to the cell? average over the three proxy crops? for surface, sprinkler or drip system?
+                ### ???? consumption or withdrawal here?
+
+                if (basin_discharge[b]!=0) {
+                  # update discharge in cell
+                  discharge[c] <- discharge[c] + additional_discharge[bc]
+                  # left-over basin discharge after this allocation step:
+                  basin_discharge[b] <- basin_discharge[b] - additional_discharge[bc]
+                }
+              }
+            }
+
+          } else if (allocationrule=="upstreamfirst") {
+
+            # Only consider cells where irrigation potential > 0
+
+            # Allocate full irrigation requirements to most upstream cell first (calcorder)
+
+          } else if (allocationrule=="equality") {
+
+            # Repeat optimization algorithm several times
+            # Instead of full irrigation, only up to 20% are allocated to most efficient cell
+            # Repeat until all river basin discharge is allocated
+
+          } else {
+            stop("Please choose allocation rule for river basin discharge allocation algorithm")
+          }
+        }
+
 
           ## write into output parameter
-        }
       }
 
 
-
-      ######## REQUIRED OUTPUT FROM CALCAVLWATER:
-      # water available for agricultural consumption
-      # water available for agricultural withdrawal
-
-
-
-
-
     }
+
+  ######## REQUIRED OUTPUT FROM CALCAVLWATER:
+  # water available for agricultural consumption
+  # water available for agricultural withdrawal
 
 
     # Visualization:

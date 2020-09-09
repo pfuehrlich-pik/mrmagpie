@@ -1,5 +1,5 @@
 #' @title calcFullIrrigationRequirement
-#' @description This function calculates the requirements for full irrigation per cell per crop
+#' @description This function calculates the water requirements for full irrigation per cell per crop given potentially available land
 #'
 #' @param selectyears years to be returned
 #' @param version     switch between LPJmL4 and LPJmL5

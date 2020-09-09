@@ -1,5 +1,5 @@
 #' @title calcIrrigation2
-#' @description This function calculates irrigation water withdrawal based on LPJmL plant blue water consumption and different irrigation efficiencies
+#' @description This function calculates irrigation water requirements based on LPJmL plant blue water consumption and different irrigation efficiencies
 #'
 #' @param selectyears years to be returned
 #' @param version Switch between LPJmL4 and LPJmL5
