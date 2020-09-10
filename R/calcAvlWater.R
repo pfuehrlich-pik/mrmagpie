@@ -439,7 +439,7 @@ calcAvlWater <- function(selectyears="all",
       yield_gain           <- as.array(collapseNames(yield_gain))
       rm(tmp)
 
-      yield_gain <- calcOutput("YieldImprovementPotential",version=version, climatetype=climatetype,selectyears=seq(1995, 2095,by=5), cells="lpjcell",aggregate=FALSE)
+      yield_gain <- calcOutput("YieldImprovementPotential",version="LPJmL5", climatetype=climatetype,selectyears=seq(1995, 2095,by=5), cells="lpjcell",aggregate=FALSE)
       yield_gain <- yield_gain[,"y1995",c("maiz","rapeseed","puls_pro")] #### select current year of loop (y) or one year only (y1995??)
       yield_gain <- as.array(yield_gain)
       #### ----------------------------------------------------------- ####
@@ -478,6 +478,7 @@ calcAvlWater <- function(selectyears="all",
         }
 
         # average cell rank over proxy crops
+        cellrank <- as.list(cellrank)
         meancellrank <- rowMeans(cbind(cellrank$maiz, cellrank$rapeseed, cellrank$puls_pro)) ### is there a more generic way? (avoid naming crops, so that can flexibly change crops)
         meancellrank[meancellrank==0] <- NA
         #### how to treat cells that have same rank after averaging rank?
@@ -533,8 +534,9 @@ calcAvlWater <- function(selectyears="all",
         } else if (allocationrule=="equality") {
 
           # Repeat optimization algorithm several times
-          # Instead of full irrigation, only up to 20% are allocated to most efficient cell
+          # Instead of full irrigation, only up to x% (e.g.20%) are allocated to most efficient cell
           # Repeat until all river basin discharge is allocated
+          ## Note: can actually be implemented in option 1 (with x as argument)
 
         } else {
           stop("Please choose allocation rule for river basin discharge allocation algorithm")
