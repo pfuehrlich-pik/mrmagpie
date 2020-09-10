@@ -10,6 +10,8 @@
 #' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
 #' @param EFR Switch for activation of environmental flow requirements (TRUE) or not (FALSE)
+#' @param allocationrule rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")
+#' @param allocationshare share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")
 #' @param irrigationsystem irrigation system to be used for river basin discharge allocation algorithm
 #'
 #' @import magclass
@@ -25,7 +27,7 @@
 
 calcAvlWater <- function(selectyears="all",
                          version="LPJmL4", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
-                         harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE, irrigationsystem="surface"){
+                         harmonize_baseline=FALSE, ref_year="y2015", EFR=TRUE, irrigationsystem="surface", allocationrule="optimization", allocationshare=NULL){
 
   #############################
   ####### Read in Data ########
@@ -483,10 +485,13 @@ calcAvlWater <- function(selectyears="all",
         meancellrank[meancellrank==0] <- NA
         #### how to treat cells that have same rank after averaging rank?
 
+        #### do we allocate ALL of river basin discharge? is this equivalent to not releasing anything into the ocean???
+
         ############################
         ### Allocation Algorithm ###
         ############################
-        # Allocate water for full irrigation to cell with highest yield gain
+        # Allocate water for full irrigation to cell with highest yield
+        ###### !!!!! Note: with this optimization rule only 2948 of the 67420 cells get an updated discharge
         if (allocationrule=="optimization") {
           # Check basin_discharge sufficient to fulfill requirements
           # if so: allocate to full irrigation
@@ -538,17 +543,69 @@ calcAvlWater <- function(selectyears="all",
           # Repeat until all river basin discharge is allocated
           ## Note: can actually be implemented in option 1 (with x as argument)
 
+          END <- FALSE
+          while (!END){
+
+            ### THIS IS NOT WORKING YET... I THINK IT'S AN INFINIE LOOP...
+
+            # update meancellrank when whole algorithm is through
+            if (all(is.na(meancellrank))){
+              meancellrank <- rowMeans(cbind(cellrank$maiz, cellrank$rapeseed, cellrank$puls_pro)) ### is there a more generic way? (avoid naming crops, so that can flexibly change crops)
+              meancellrank[meancellrank==0] <- NA
+            }
+
+            if (any(!is.na(meancellrank))){
+
+              l <- sum(!is.na(unique(meancellrank)))
+              for (i in 1:l){
+                # highest ranked cell:
+                c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]    #cell number
+                bc <- which(meancellrank==min(meancellrank,na.rm=TRUE))           #basin cell number
+
+                # ranking for cells with equal rank: first position (RANDOM!!! better rule???)
+                for (k in (1:length(meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))]))){
+                  # additionally required discharge per cell to reach full irrigation (considering already reserved fraction)
+                  additional_discharge_ww <- required_wat_fullirrig_ww - CAW_magpie[c[k]]*frac_CAg_fulfilled[c[k]]
+                  additional_discharge_wc <- required_wat_fullirrig_wc - CAC_magpie[c[k]]*frac_CAg_fulfilled[c[k]]
+
+                  # mean of additional discharge required for proxy crops & check if basin discharge sufficient to fulfill requirements, else allocate all left-over basin discharge
+                  additional_discharge[bc[k]] <- pmin(mean(additional_discharge_ww[c[k],,irrigationsystem]),basin_discharge[b])
+                  additional_discharge[bc[k]] <- pmin(mean(additional_discharge_wc[c[k],,irrigationsystem]),basin_discharge[b])
+                  ### ???? which additional discharge should be allocated to the cell? average over the three proxy crops? for surface, sprinkler or drip system?
+                  ### ???? consumption or withdrawal here?
+
+                  if (basin_discharge[b]!=0) {
+                    # update discharge in cell
+                    discharge[c[k]]    <- discharge[c[k]] + additional_discharge[bc[k]]*allocationshare
+                    # left-over basin discharge after this allocation step:
+                    basin_discharge[b] <- basin_discharge[b] - additional_discharge[bc[k]]*allocationshare
+                  }
+                }
+                # overwrite meancellrank to get next highest ranked cell in the next round
+                meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))] <- NA
+                # stop when all basin discharge is allocated
+                END <- basin_discharge[b]==0
+              }
+            }
+          }
         } else {
           stop("Please choose allocation rule for river basin discharge allocation algorithm")
         }
       }
-      # write into parameter
+      #################
+      #### OUTPUTS ####
+      #################
     }
   }
 
   ######## REQUIRED OUTPUT FROM CALCAVLWATER:
   # water available for agricultural consumption
   # water available for agricultural withdrawal
+  ## each one csv with scenarios:
+  # EFP on, off
+  # all SSPs of non-agricultural water (currently: 3)
+  # for all years
+  # option to return cellular or cluster
 
 
     # Visualization:
