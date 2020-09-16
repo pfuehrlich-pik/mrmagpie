@@ -26,7 +26,6 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", climatetype="HadGEM2_ES:rc
   ##############################
   ## Irrigation system area initialization
   irrigation_system <- calcOutput("IrrigationSystem", source=irrigini, aggregate=FALSE)
-  getNames(irrigation_system) <- gsub("shr_AEI_","",getNames(irrigation_system))
 
   ## Read in Irrigation Water Withdrawals (in m^3 per hectar per year) [smoothed]
   irrig_withdrawal  <- calcOutput("Irrigation2", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, irrig_requirement="withdrawal", aggregate=FALSE)
@@ -39,7 +38,7 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", climatetype="HadGEM2_ES:rc
   irrig_consumption <- irrig_consumption[,,"pasture",invert=T]
 
   ## Read in cropland area (by crop) from crop area initialization (in mio. ha)
-  crops_grown <- calcOutput("Croparea", sectoral="kcr", cells="lpjcell", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate = FALSE)
+  crops_grown <- calcOutput("Croparea", sectoral="kcr", cells="lpjcell", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate=FALSE)
   # Only initialization year needed
   crops_grown <- crops_grown[,paste0("y",iniyear),]
   # Only irrigated needed

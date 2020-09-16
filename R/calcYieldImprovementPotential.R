@@ -1,15 +1,16 @@
 #' @title calcYieldImprovementPotential
-#' @description This calculates the yield improvement potential of irrigation for different crops
+#' @description This function calculates the yield improvement potential of irrigation for different crops
 #'
-#' @param version     switch between LPJmL4 and LPJmL5
-#' @param climatetype switch between different climate scenarios (default: "CRU_4")
-#' @param time            time smoothing: average, spline or raw (default)
+#' @param version     switch between LPJmL4 and LPJmL5 of calcYields function
+#' @param climatetype switch between different climate scenarios (default: "CRU_4") of calcYields function
+#' @param time            time smoothing of calcYields function: average, spline (default) or raw
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
-#' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
+#' @param harmonize_baseline harmonization in calcYields function: FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year onwards)
 #' @param ref_year           reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
-#' @param selectyears defaults to all years available
+#' @param selectyears years selected in calcYields function
 #' @param cells       switch between "lpjcell" (67420) and "magpiecell" (59199)
+#' @param crops       crops for which yield improvement potential through irrigation should be calculated
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -21,21 +22,15 @@
 #' @import magclass
 
 calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
-                       harmonize_baseline=FALSE, selectyears=seq(1995, 2095,by=5), cells="magpiecell"){
+                       harmonize_baseline=FALSE, selectyears=seq(1995, 2095,by=5), cells="magpiecell", crops=c("maiz","rapeseed","puls_pro")){
 
-  # read in land available for agricultural use (in mio. ha) and transform to ha
-  land <- collapseNames(calcOutput("AvlLandSi", aggregate=FALSE)[,,"si0"])*1000000
+  # read in yields [in tons/ha]
+  yields <- calcOutput("Yields", version=version, climatetype=climatetype, time=time, dof=dof,
+                          harmonize_baseline=harmonize_baseline, aggregate=FALSE, selectyears=selectyears)
 
-  # read in yields (in tons/ha)
-  yields    <- calcOutput("Yields", version=version, climatetype=climatetype, time=time, dof=dof,
-                          harmonize_baseline=harmonize_baseline, aggregate=FALSE, years=selectyears)
-
-  # yield gap (irrigated vs. rainfed) [tons per ha]
-  tmp <- collapseNames(yields[,,"irrigated"])-collapseNames(yields[,,"rainfed"])
-  # calculate yield gap in tons (considering available land)
-  tmp <- tmp*land
-  ### cap to 0
-  tmp <- pmax(tmp,0)
+  # yield gap (irrigated vs. rainfed) [in tons/ha]
+  tmp <- collapseNames(yields[,,"irrigated"][,,crops])-collapseNames(yields[,,"rainfed"][,,crops])
+  # (Note: under N-stress, irrigation may lead to lower yields; also: may lead to shift in growing period -> tmp can have negative values)
 
   # cellular dimension
   if (cells=="magpiecell") {
@@ -43,7 +38,7 @@ calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4",
   } else if (cells=="lpjcell") {
     lpj_cells_map  <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
     getCells(tmp)  <- paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep=".")
-    yield_gain     <- new.magpie(1:NCELLS,getYears(tmp),getNames(tmp))
+    yield_gain     <- new.magpie(1:67420,getYears(tmp),getNames(tmp))
     yield_gain[,,] <- 0
     yield_gain[paste("GLO",magclassdata$cellbelongings$LPJ_input.Index,sep="."),,] <- tmp[,,]
     getCells(yield_gain) <- paste(lpj_cells_map$ISO,1:67420,sep=".")
@@ -59,7 +54,7 @@ calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4",
   return(list(
     x=yield_gain,
     weight=NULL,
-    unit="tons",
+    unit="tons per ha",
     description="Yield improvement potential by irrigation for different crop types.",
     isocountries=FALSE))
 }

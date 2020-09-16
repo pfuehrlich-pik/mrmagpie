@@ -7,7 +7,7 @@
 calcIrrigationSystem(source = "Jaegermeyr_lpjcell")
 }
 \arguments{
-\item{source}{data source to be used: Jaegermeyr (irrigation system share based on FAO 2014, ICID 2012 and Rohwer et al. 2007) or LPJmL (dominant irrigation system per country)}
+\item{source}{data source to be used: Jaegermeyr (irrigation system share based on FAO 2014, ICID 2012 and Rohwer et al. 2007) or LPJmL (dominant irrigation system per country) and number of cells (lpjcell or magpiecell) separated by _}
 }
 \value{
 magpie object in cellular resolution

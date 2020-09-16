@@ -12,6 +12,14 @@
 #' @import madrat
 #' @import magclass
 
+
+### Questions:
+# Calculate for all crops?
+# for all years? (land_si_0 always constant, but water availability may change depending on climate scenario)
+
+## Outcome:
+# csv of dimensions: year, cluster/cell, crops, irrig_system
+
 calcIrrigatableArea <- function(cells="lpjcell"){
 
   if (cells=="lpjcell") {

@@ -13,7 +13,11 @@ calcAvlWater(
   dof = NULL,
   harmonize_baseline = FALSE,
   ref_year = "y2015",
-  EFR = TRUE
+  EFR = TRUE,
+  allocationrule = "optimization",
+  allocationshare = NULL,
+  irrigationsystem = "initialization",
+  irrigini = "Jaegermeyr_lpjcell"
 )
 }
 \arguments{
@@ -34,6 +38,14 @@ calcAvlWater(
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 
 \item{EFR}{Switch for activation of environmental flow requirements (TRUE) or not (FALSE)}
+
+\item{allocationrule}{rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")}
+
+\item{allocationshare}{share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")}
+
+\item{irrigationsystem}{irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")}
+
+\item{irrigini}{when "initialization" selected for irrigation system: choose initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
 }
 \value{
 magpie object in cellular resolution

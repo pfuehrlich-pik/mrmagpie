@@ -12,25 +12,28 @@ calcYieldImprovementPotential(
   dof = 4,
   harmonize_baseline = FALSE,
   selectyears = seq(1995, 2095, by = 5),
-  cells = "magpiecell"
+  cells = "magpiecell",
+  crops = c("maiz", "rapeseed", "puls_pro")
 )
 }
 \arguments{
-\item{version}{switch between LPJmL4 and LPJmL5}
+\item{version}{switch between LPJmL4 and LPJmL5 of calcYields function}
 
-\item{climatetype}{switch between different climate scenarios (default: "CRU_4")}
+\item{climatetype}{switch between different climate scenarios (default: "CRU_4") of calcYields function}
 
-\item{time}{time smoothing: average, spline or raw (default)}
+\item{time}{time smoothing of calcYields function: average, spline (default) or raw}
 
 \item{averaging_range}{only specify if time=="average": number of time steps to average}
 
 \item{dof}{only specify if time=="spline": degrees of freedom needed for spline}
 
-\item{harmonize_baseline}{FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
+\item{harmonize_baseline}{harmonization in calcYields function: FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year onwards)}
 
-\item{selectyears}{defaults to all years available}
+\item{selectyears}{years selected in calcYields function}
 
 \item{cells}{switch between "lpjcell" (67420) and "magpiecell" (59199)}
+
+\item{crops}{crops for which yield improvement potential through irrigation should be calculated}
 
 \item{ref_year}{reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 }
@@ -38,7 +41,7 @@ calcYieldImprovementPotential(
 magpie object in cellular resolution
 }
 \description{
-This calculates the yield improvement potential of irrigation for different crops
+This function calculates the yield improvement potential of irrigation for different crops
 }
 \examples{
 \dontrun{ calcOutput("YieldImprovementPotential", aggregate=FALSE) }

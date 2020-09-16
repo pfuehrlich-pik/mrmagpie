@@ -6,18 +6,20 @@
 \usage{
 calcFullIrrigationRequirement(
   version = "LPJmL5",
-  selectyears = seq(1995, 2095, by = 5),
   climatetype = "HadGEM2_ES:rcp2p6:co2",
   harmonize_baseline = FALSE,
   time = "spline",
   dof = 4,
+  cells = "lpjcell",
+  selectyears = seq(1995, 2095, by = 5),
+  iniyear = 1995,
+  iniarea = TRUE,
+  irrigini = "Jaegermeyr_lpjcell",
   irrig_requirement = "withdrawal"
 )
 }
 \arguments{
 \item{version}{switch between LPJmL4 and LPJmL5}
-
-\item{selectyears}{years to be returned}
 
 \item{climatetype}{switch between different climate scenarios (default: "CRU_4")}
 
@@ -27,9 +29,17 @@ calcFullIrrigationRequirement(
 
 \item{dof}{only specify if time=="spline": degrees of freedom needed for spline}
 
-\item{irrig_requirement}{consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements}
-
 \item{cells}{switch between "lpjcell" (67420) and "magpiecell" (59199)}
+
+\item{selectyears}{years to be returned}
+
+\item{iniyear}{Year of initialization for cropland area}
+
+\item{iniarea}{if TRUE (default): already irrigated area is subracted, if FALSE: total potential land area is used}
+
+\item{irrigini}{Initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
+
+\item{irrig_requirement}{consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements}
 
 \item{averaging_range}{only specify if time=="average": number of time steps to average}
 
