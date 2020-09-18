@@ -386,6 +386,10 @@ calcAvlWater <- function(selectyears="all",
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/avl_wat_act)))
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
+
+      ##### MAKE SURE THAT DISCHARGE IS >0 (note: or make sure in loop...)
+      discharge <- pmax(discharge, 0)
+
       ################################################
       ####### River basin discharge allocation #######
       ################################################
@@ -491,17 +495,18 @@ calcAvlWater <- function(selectyears="all",
               if (any(!is.na(meancellrank))){
               # highest ranked cell:
               c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]    #cell number
-          # c  <- cells[which(meancellrank==108)]
-              bc <- which(meancellrank==min(meancellrank,na.rm=TRUE))           #basin cell number
+           #c  <- cells[which(meancellrank==360)]
+             # bc <- which(meancellrank==min(meancellrank,na.rm=TRUE))           #basin cell number
 
               # cells with equal rank: use first occurence
-              # (note: very rare case since meancellrank ties already ranked by maize cropcellrank)
+              # (note: rather rare case since meancellrank ties already ranked by maize cropcellrank)
               for (k in (1:length(meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))]))){
                # for (k in (1:length(meancellrank[meancellrank==21]))){
 
                 if (basin_discharge[b]>0) {
                   # available water for additional irrigation
                   avl_wat              <- max(discharge[c[k]]-required_wat_min[c[k]],0)
+                  # how much withdrawals can be fulfilled by available water
                   if (required_wat_fullirrig_ww[c[k]]>0){
                     frac_fullirrig[c[k]] <- min(avl_wat/required_wat_fullirrig_ww[c[k]],1)
                   } else {
@@ -509,15 +514,30 @@ calcAvlWater <- function(selectyears="all",
                   }
                   # check whether can be fulfilled by left-over basin discharge
                   if (basin_discharge[b] < required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]) {
+                    # print("l.512")
                     frac_fullirrig[c[k]] <- min(basin_discharge[b]/required_wat_fullirrig_wc[c[k]],1)
                   } ######??????? wc or ww here?????
                   # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
+                  #print(paste("dsc1", discharge[c(downstreamcells[[c[k]]],c[k])]))
+                  discharge[discharge[c(downstreamcells[[c[k]]],c[k])]<0] <- 0
+
                   if (min(discharge[c(downstreamcells[[c[k]]],c[k])]) < required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]) {
-                    frac_fullirrig[c[k]] <- min(min(discharge[c(downstreamcells[[c[k]]],c[k])])/required_wat_fullirrig_wc[c[k]],1)
+                   # print("l.518")
+                    frac_fullirrig[c[k]] <- min(discharge[c(downstreamcells[[c[k]]],c[k])])/required_wat_fullirrig_wc[c[k]]
                   }
+                  #print(paste("dsc2", discharge[c(downstreamcells[[c[k]]],c[k])]))
+                  #discharge[discharge[c(downstreamcells[[c[k]]],c[k])]<0] <- 0
                   discharge[c(downstreamcells[[c[k]]],c[k])] <- discharge[c(downstreamcells[[c[k]]],c[k])] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
+                  #discharge[discharge[c(downstreamcells[[c[k]]],c[k])]<0] <- 0
+                  #print(paste("dsc3", discharge[c(downstreamcells[[c[k]]],c[k])]))
+                  #if (any( discharge[c(downstreamcells[[c[k]]],c[k])]<0)) {
+                  #  print(paste("Problemcell", c[k], "discharge", discharge[c(downstreamcells[[c[k]]],c[k])]))
+                  #}
+                  # print(discharge[c(downstreamcells[[c[k]]],c[k])])
                   # left-over basin discharge after this allocation step:
+                  #print(paste("basindischarge",basin_discharge[b], "requiredwat",required_wat_fullirrig_wc[c[k]],"frac",frac_fullirrig[c[k]]))
                   basin_discharge[b] <- basin_discharge[b] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
+                  #print(paste("basindischarge2",basin_discharge[b], "requiredwat",required_wat_fullirrig_wc[c[k]],"frac",frac_fullirrig[c[k]]))
                 }
               }
               # overwrite meancellrank to get next highest ranked cell in the next round:
