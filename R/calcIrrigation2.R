@@ -103,7 +103,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       }
 
       # Aggregate to MAgPIE crops
-      irrig_requirements <- toolAggregate(irrig_requirements, LPJ2MAG, from="LPJmL", to="MAgPIE", dim=3.1, partrel=TRUE)
+      if (crops=="magpie") {
+        irrig_requirements <- toolAggregate(irrig_requirements, LPJ2MAG, from="LPJmL", to="MAgPIE", dim=3.1, partrel=TRUE)
+      }
 
     } else {
       # Time smoothing:

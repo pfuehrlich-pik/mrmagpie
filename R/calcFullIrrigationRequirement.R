@@ -41,10 +41,10 @@ calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2
     land        <- land - crops_grown
   }
   # transform units (from mio. ha to ha)
-  land <- land*1000000
+  land <- land*1e6
 
-  # water requirements for full irrigation in cell per crop (in m^3)
-  tmp <- irrig_wat*land
+  # water requirements for full irrigation in cell per crop (in mio. m^3)
+  tmp <- irrig_wat*land*1e-6
 
   # cellular dimension
   if (cells=="magpiecell") {
@@ -72,7 +72,7 @@ calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2
   return(list(
     x=out,
     weight=NULL,
-    unit="m^3",
+    unit="mio. m^3",
     description="full irrigation requirements per cell per crop per irrigation system",
     isocountries=FALSE))
 }

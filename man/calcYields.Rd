@@ -14,6 +14,7 @@ calcYields(
   ref_year = "y2015",
   calib_proxy = TRUE,
   split_cropcalc = TRUE,
+  crops = "magpie",
   selectyears = "all"
 )
 }
@@ -35,6 +36,8 @@ calcYields(
 \item{calib_proxy}{calibrated proxy to FAO values if set to TRUE}
 
 \item{split_cropcalc}{split calculation for different crop types (e.g. for parallelization)}
+
+\item{crops}{magpie crops or lpjml crops}
 
 \item{selectyears}{defaults to all years available}
 }

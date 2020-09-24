@@ -16,6 +16,7 @@ calcAvlWater(
   EFR = TRUE,
   allocationrule = "optimization",
   allocationshare = NULL,
+  gainthreshold = 1,
   irrigationsystem = "initialization",
   irrigini = "Jaegermeyr_lpjcell"
 )
@@ -42,6 +43,8 @@ calcAvlWater(
 \item{allocationrule}{rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")}
 
 \item{allocationshare}{share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")}
+
+\item{gainthreshold}{threshold of yield improvement potential required for water allocation in upstreamfirst algorithm (in tons per ha)}
 
 \item{irrigationsystem}{irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")}
 
