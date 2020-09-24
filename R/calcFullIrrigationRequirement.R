@@ -32,7 +32,7 @@ calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2
   irrig_wat <- irrig_wat[,,"pasture",invert=T]
   irrig_wat <- toolCell2isoCell(irrig_wat)
 
-  # read in land available for agricultural use (in mio. ha) and transform to ha
+  # read in land available for agricultural use (in mio. ha)
   land <- collapseNames(calcOutput("AvlLandSi", aggregate=FALSE)[,,"si0"])
   if (iniarea) {
     # subtract area already irrigated in initialization (in mio. ha)
@@ -40,7 +40,7 @@ calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2
     crops_grown <- collapseNames(dimSums(crops_grown[,paste0("y",iniyear),],dim=3))
     land        <- land - crops_grown
   }
-  # transform units
+  # transform units (from mio. ha to ha)
   land <- land*1000000
 
   # water requirements for full irrigation in cell per crop (in m^3)

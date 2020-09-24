@@ -389,7 +389,7 @@ calcAvlWater <- function(selectyears="all",
 
 
       ##### MAKE SURE THAT DISCHARGE IS >0 (note: or make sure in loop...)
-      discharge <- pmax(discharge, 0)
+      #discharge <- pmax(discharge, 0)
 
       ################################################
       ####### River basin discharge allocation #######
@@ -537,9 +537,13 @@ calcAvlWater <- function(selectyears="all",
                       frac_fullirrig[c[k]] <- basin_discharge[b]/required_wat_fullirrig_wc[c[k]]
                     }
                     # check whether discharge in downstreamcells sufficient to fulfill required water consumption
-                    if (min(discharge[c(downstreamcells[[c[k]]],c[k])]) < required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]) {
-                      frac_fullirrig[c[k]] <- min(discharge[c(downstreamcells[[c[k]]],c[k])])/required_wat_fullirrig_wc[c[k]]
-                    }
+                    #if (min(discharge[c(downstreamcells[[c[k]]],c[k])]) > 0) {
+                      if (min(discharge[c(downstreamcells[[c[k]]],c[k])]) < required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]) {
+                        frac_fullirrig[c[k]] <- min(discharge[c(downstreamcells[[c[k]]],c[k])])/required_wat_fullirrig_wc[c[k]]
+                      }
+                    #} else {
+                    #  frac_fullirrig[c[k]] <- 0
+                    #}
                   } else {
                     frac_fullirrig[c[k]]   <- 0
                   }
