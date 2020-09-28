@@ -13,7 +13,7 @@ calcYieldImprovementPotential(
   harmonize_baseline = FALSE,
   selectyears = seq(1995, 2095, by = 5),
   cells = "magpiecell",
-  crops = c("maiz", "rapeseed", "puls_pro")
+  crops = "lpjml"
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ calcYieldImprovementPotential(
 
 \item{cells}{switch between "lpjcell" (67420) and "magpiecell" (59199)}
 
-\item{crops}{crops for which yield improvement potential through irrigation should be calculated}
+\item{crops}{switch between "magpie" and "lpjml" (default) crops}
 
 \item{ref_year}{reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 }

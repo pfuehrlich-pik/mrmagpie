@@ -397,27 +397,40 @@ calcAvlWater <- function(selectyears="all",
       ####### River basin discharge allocation #######
       ################################################
       ### River basin discharge (that can be allocated to cells within the basin)
-      # cell_basin_mapping <- array(data=0,dim=NCELLS)
-      # basin_discharge    <- array(data=0,dim=length(unique(endcell)))
-      #
-      # basin_code <- 1
-      # for (b in unique(endcell)){
-      #   # mapping of cells to basins
-      #   cell_basin_mapping[which(endcell==b)] <- basin_code
-      #   # river basin discharge: discharge of endcell
-      #   basin_discharge[basin_code]           <- discharge[b]
-      #
-      #   basin_code <- basin_code+1
-      # }
-      # rm(basin_code)
+      cell_basin_mapping <- array(data=0,dim=NCELLS)
+      #basin_discharge    <- array(data=0,dim=length(unique(endcell)))
+
+      basin_code <- 1
+      for (b in unique(endcell)){
+        # mapping of cells to basins
+        cell_basin_mapping[which(endcell==b)] <- basin_code
+        # river basin discharge: discharge of endcell
+       # basin_discharge[basin_code]           <- discharge[b]
+
+        basin_code <- basin_code+1
+      }
+      rm(basin_code)
 
       ### Ranking of cells within a basin
       # Read in potential yield gain per cell for proxy crops (maize, rapeseed, pulses)
       yield_gain <- calcOutput("YieldImprovementPotential", version="LPJmL5", climatetype=climatetype, harmonize_baseline=harmonize_baseline,
                                time="spline", averaging_range=NULL, dof=4, selectyears="y1995",
-                               cells="lpjcell", crops=c("maiz","rapeseed","puls_pro"), aggregate=FALSE)
+                               cells="lpjcell", crops="lpjml", aggregate=FALSE)
+      yield_gain <- calcOutput("YieldImprovementPotential", version="LPJmL5", climatetype=climatetype, harmonize_baseline=harmonize_baseline,
+                               time="spline", averaging_range=NULL, dof=4, selectyears="y1995",
+                               cells="lpjcell", crops="magpie", aggregate=FALSE)[,,c("maiz","puls_pro","rapeseed")]
       #### ?????? select current year of loop (y) or one year only (y1995) --> I think: only initialization year (i.e. y1995)
       yield_gain <- as.array(yield_gain)
+
+
+      ### Global cell ranking based on yield gain
+
+      for (crop in getNames(yield_gain)) {
+        # cell ranking for crop (from highest yield gain (rank=1) to lowest yield gain (rank=1+x))
+        cropcellrank     <- floor(rank(-yield_gain[,,crop]))
+        cellrank[[crop]] <- cropcellrank
+        rm(cropcellrank)
+      }
 
       ### Required water for full irrigation per cell (in m^3)
       #?? with taking into account already irrigated area in intialization PROBLEM: negative values!!!!
@@ -510,9 +523,22 @@ calcAvlWater <- function(selectyears="all",
           meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$puls_pro[tmp==i])-n)
         }
         rm(tmp)
-        ### Note: there will still be some left... (covered in loop!)
-
-        ## rank nach cell-id!!!!!!
+        # rank left-over ties by cell-id
+        tmp <- meancellrank
+        for (i in unique(sort(tmp))) {
+          c <- which(meancellrank==i)
+          if (length(meancellrank[tmp==i])>1) {
+            if (length(meancellrank[tmp==i])>2) {
+              n <- -1
+            } else {
+              n <- 0
+            }
+            for (k in (1:length(meancellrank[which(meancellrank==i)]))){
+              meancellrank[c] <- meancellrank[c]+n
+              n <- n+1
+            }
+          }
+        }
 
         ############################
         ### Allocation Algorithm ###
@@ -520,15 +546,15 @@ calcAvlWater <- function(selectyears="all",
         if (allocationrule=="optimization") {
           # Allocate water for full irrigation to cell with highest yield
 
-          l <- sum(!is.na(unique(meancellrank)))
-          for (i in (1:l)){ # (1:max(meancellrank,na.rm=T))
-              if (any(!is.na(meancellrank))){
+          #l <- sum(!is.na(unique(meancellrank)))
+          for (c in (1:max(meancellrank,na.rm=T))){ # (1:max(meancellrank,na.rm=T))
+              #if (any(!is.na(meancellrank))){
               # highest ranked cell:
-              c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]    #cell number
+              #c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]    #cell number
 
               # cells with equal rank: use first occurence
               # (note: rather rare case since meancellrank ties already ranked by maize cropcellrank)
-              for (k in (1:length(meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))]))){
+              #for (k in (1:length(meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))]))){
 
                 # if (k>1) {
                 #   print(paste("Meancellrank in cell", c, "of basin", b, "in iteration", i, "is not unique"))
@@ -536,18 +562,18 @@ calcAvlWater <- function(selectyears="all",
 
                 #if (basin_discharge[b]>0) {
                   # available water for additional irrigation
-                  avl_wat_ww <- max(discharge[c[k]]-required_wat_min_allocation[c[k]],0)
+                  avl_wat_ww <- max(discharge[c]-required_wat_min_allocation[c],0)
                   # how much withdrawals can be fulfilled by available water
-                  if (required_wat_fullirrig_ww[c[k]]>0) {
-                    frac_fullirrig[c[k]]   <- min(avl_wat_ww/required_wat_fullirrig_ww[c[k]],1)
-                    if (required_wat_fullirrig_wc[c[k]]>0 & length(downstreamcells[[c[k]]])>0) {
-                      avl_wat_wc <- max(min(discharge[downstreamcells[[c[k]]]] - required_wat_min_allocation[downstreamcells[[c[k]]]]),0)
-                      frac_fullirrig[c[k]]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c[k]],frac_fullirrig[c[k]])
+                  if (required_wat_fullirrig_ww[c]>0) {
+                    frac_fullirrig[c]   <- min(avl_wat_ww/required_wat_fullirrig_ww[c],1)
+                    if (required_wat_fullirrig_wc[c]>0 & length(downstreamcells[[c]])>0) {
+                      avl_wat_wc <- max(min(discharge[downstreamcells[[c]]] - required_wat_min_allocation[downstreamcells[[c]]]),0)
+                      frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c],frac_fullirrig[c])
                       # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
-                      discharge[c(downstreamcells[[c[k]]],c[k])] <- discharge[c(downstreamcells[[c[k]]],c[k])] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
+                      discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
                     }
                     # update minimum water required in cell:
-                    required_wat_min_allocation[c[k]] <- required_wat_min_allocation[c[k]] + frac_fullirrig[c[k]]*required_wat_fullirrig_ww[c[k]]
+                    required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c]
 
                     # check whether additional water consumption can be fulfilled by left-over basin discharge
                     # if (basin_discharge[b] < required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]) {
@@ -566,10 +592,10 @@ calcAvlWater <- function(selectyears="all",
                   # left-over basin discharge after this allocation step:
                   #basin_discharge[b] <- basin_discharge[b] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
                 #}
-              }
+              #}
               # overwrite meancellrank to get next highest ranked cell in the next round:
-              meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))] <- NA ##(goes away!)
-            }
+              #meancellrank[which(meancellrank==min(meancellrank,na.rm=TRUE))] <- NA ##(goes away!)
+            #}
           }
         } else if (allocationrule=="upstreamfirst") {
 

@@ -10,7 +10,7 @@
 #' @param ref_year           reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears years selected in calcYields function
 #' @param cells       switch between "lpjcell" (67420) and "magpiecell" (59199)
-#' @param crops       crops for which yield improvement potential through irrigation should be calculated
+#' @param crops       switch between "magpie" and "lpjml" (default) crops
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -22,14 +22,14 @@
 #' @import magclass
 
 calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
-                       harmonize_baseline=FALSE, selectyears=seq(1995, 2095,by=5), cells="magpiecell", crops=c("maiz","rapeseed","puls_pro")){
+                       harmonize_baseline=FALSE, selectyears=seq(1995, 2095,by=5), cells="magpiecell", crops="lpjml"){
 
   # read in yields [in tons/ha]
   yields <- calcOutput("Yields", version=version, climatetype=climatetype, time=time, dof=dof,
-                          harmonize_baseline=harmonize_baseline, aggregate=FALSE, selectyears=selectyears)
+                          harmonize_baseline=harmonize_baseline, aggregate=FALSE, selectyears=selectyears, crops=crops)
 
   # yield gap (irrigated vs. rainfed) [in tons/ha]
-  tmp <- collapseNames(yields[,,"irrigated"][,,crops])-collapseNames(yields[,,"rainfed"][,,crops])
+  tmp <- collapseNames(yields[,,"irrigated"])-collapseNames(yields[,,"rainfed"])
   # (Note: under N-stress, irrigation may lead to lower yields; also: may lead to shift in growing period -> tmp can have negative values)
 
   # cellular dimension

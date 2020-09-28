@@ -5,6 +5,7 @@
 #' @param version Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
 #' @param cells Switch between "lpjcell" (67420) and "magpiecell" (59199)
+#' @param crops selects "magpie" (default) or "lpjml" crops
 #' @param time Time smoothing: average, spline or raw (default)
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
@@ -29,7 +30,7 @@
   # field efficiency: crop-specific and irrigation-system-specific
 
 
-calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
+calcIrrigation2 <- function(selectyears="all", cells="lpjcell", crops="magpie",
                            version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
                            harmonize_baseline=FALSE, ref_year=NULL, irrig_requirement="withdrawal"){
 
@@ -109,7 +110,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
 
     } else {
       # Time smoothing:
-      x     <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
+      x     <- calcOutput("Irrigation2", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
                           harmonize_baseline=FALSE, time="raw", irrig_requirement=irrig_requirement)
 
       # Smoothing data through average:
@@ -134,9 +135,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
       stop("Harmonization with raw data not possible. Select time='spline' when applying harmonize_baseline=TRUE")
     } else {
       # Load smoothed data
-      baseline   <- calcOutput("Irrigation2", version=version, climatetype=harmonize_baseline, aggregate=FALSE,
+      baseline   <- calcOutput("Irrigation2", version=version, climatetype=harmonize_baseline, crops=crops, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
-      x          <- calcOutput("Irrigation2", version=version, climatetype=climatetype, aggregate=FALSE,
+      x          <- calcOutput("Irrigation2", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
       # Harmonize to baseline
       irrig_requirements <- toolHarmonize2Baseline(x=x, base=baseline, ref_year=ref_year, limited=TRUE, hard_cut=FALSE)
@@ -144,7 +145,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell",
   }
 
   if(selectyears!="all"){
-    years       <- sort(findset(selectyears,noset="original"))
+    years               <- sort(findset(selectyears,noset="original"))
     irrig_requirements  <- irrig_requirements[,years,]
   }
 

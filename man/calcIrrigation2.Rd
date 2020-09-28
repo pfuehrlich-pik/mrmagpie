@@ -7,6 +7,7 @@
 calcIrrigation2(
   selectyears = "all",
   cells = "lpjcell",
+  crops = "magpie",
   version = "LPJmL5",
   climatetype = "HadGEM2_ES:rcp2p6:co2",
   time = "raw",
@@ -21,6 +22,8 @@ calcIrrigation2(
 \item{selectyears}{years to be returned}
 
 \item{cells}{Switch between "lpjcell" (67420) and "magpiecell" (59199)}
+
+\item{crops}{selects "magpie" (default) or "lpjml" crops}
 
 \item{version}{Switch between LPJmL4 and LPJmL5}
 
