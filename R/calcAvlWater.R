@@ -397,40 +397,19 @@ calcAvlWater <- function(selectyears="all",
       ####### River basin discharge allocation #######
       ################################################
       ### River basin discharge (that can be allocated to cells within the basin)
-      cell_basin_mapping <- array(data=0,dim=NCELLS)
-      #basin_discharge    <- array(data=0,dim=length(unique(endcell)))
-
-      basin_code <- 1
-      for (b in unique(endcell)){
-        # mapping of cells to basins
-        cell_basin_mapping[which(endcell==b)] <- basin_code
-        # river basin discharge: discharge of endcell
-       # basin_discharge[basin_code]           <- discharge[b]
-
-        basin_code <- basin_code+1
-      }
-      rm(basin_code)
-
-      ### Ranking of cells within a basin
-      # Read in potential yield gain per cell for proxy crops (maize, rapeseed, pulses)
-      yield_gain <- calcOutput("YieldImprovementPotential", version="LPJmL5", climatetype=climatetype, harmonize_baseline=harmonize_baseline,
-                               time="spline", averaging_range=NULL, dof=4, selectyears="y1995",
-                               cells="lpjcell", crops="lpjml", aggregate=FALSE)
-      yield_gain <- calcOutput("YieldImprovementPotential", version="LPJmL5", climatetype=climatetype, harmonize_baseline=harmonize_baseline,
-                               time="spline", averaging_range=NULL, dof=4, selectyears="y1995",
-                               cells="lpjcell", crops="magpie", aggregate=FALSE)[,,c("maiz","puls_pro","rapeseed")]
-      #### ?????? select current year of loop (y) or one year only (y1995) --> I think: only initialization year (i.e. y1995)
-      yield_gain <- as.array(yield_gain)
-
-
-      ### Global cell ranking based on yield gain
-
-      for (crop in getNames(yield_gain)) {
-        # cell ranking for crop (from highest yield gain (rank=1) to lowest yield gain (rank=1+x))
-        cropcellrank     <- floor(rank(-yield_gain[,,crop]))
-        cellrank[[crop]] <- cropcellrank
-        rm(cropcellrank)
-      }
+      # cell_basin_mapping <- array(data=0,dim=NCELLS)
+      # #basin_discharge    <- array(data=0,dim=length(unique(endcell)))
+      #
+      # basin_code <- 1
+      # for (b in unique(endcell)){
+      #   # mapping of cells to basins
+      #   cell_basin_mapping[which(endcell==b)] <- basin_code
+      #   # river basin discharge: discharge of endcell
+      #  # basin_discharge[basin_code]           <- discharge[b]
+      #
+      #   basin_code <- basin_code+1
+      # }
+      # rm(basin_code)
 
       ### Required water for full irrigation per cell (in m^3)
       #?? with taking into account already irrigated area in intialization PROBLEM: negative values!!!!
@@ -472,73 +451,84 @@ calcAvlWater <- function(selectyears="all",
       required_wat_min_allocation <- required_wat_min
 
       ### River basin discharge allocation ###
-      for (b in unique(cell_basin_mapping)) {
+      #for (b in unique(cell_basin_mapping)) {
 
-        ## Cell-ranking in river basin
-        cellrank <-  NULL
-        for (crop in getNames(yield_gain)) {
+        # Global cell rank based on yield gain potential by irrigation of proxy crops: maize, rapeseed, pulses
+        meancellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
+                                   selectyears="y1995", cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
+        meancellrank <- as.array(meancellrank)[,1,1]
 
-          # cells of basin
-          cells <- which(cell_basin_mapping==b)
+        ### !!!! make rank algorithm work for meancellrank again!
 
-          # cell ranking for crop (from highest yield gain (rank=1) to lowest yield gain (rank=1+x))
-          cropcellrank     <- floor(rank(-yield_gain[cells,,crop]))
-          cellrank[[crop]] <- cropcellrank
-          rm(cropcellrank)
-        }
+        # # Solve ties in cell ranking
+        # proxycrop=c("maiz", "rapeseed", "puls_pro")
+        # for (crop in proxycrop) {
+        #
+        #   if (length(meancellrank)!=length(unique(meancellrank))){
+        #     cropcellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
+        #                                selectyears="y1995", cells="lpjcell", crops="magpie", method="cropcellrank", proxycrop=crop, aggregate=FALSE)
+        #     cropcellrank <- as.array(cropcellrank)[,1,1]
+        #
+        #     for (i in unique(meancellrank[duplicated(meancellrank)])) {
+        #
+        #       cells <- which(meancellrank==i)
+        #       l     <- length(meancellrank[meancellrank==i])
+        #       n     <- i - floor(l/2)
+        #       meancellrank[cells] <- rank(cropcellrank[cells])+n-1
+        #     }
+        #   }
+        # }
+#
+#         # Solve ties in cell ranking
+#         # 1.1) in case of tie use maize cellrank
+#         tmp <- meancellrank
+#         meancellrank[] <- NA
+#         for (i in sort(tmp)) {
+#           n <- ifelse(length(meancellrank[tmp==i])>2, 2, 1)
+#           meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$maiz[tmp==i])-n)
+#         }
+#         # 1.2) in case of still tie: use rapeseed cellrank
+#         tmp <- meancellrank
+#         for (i in sort(tmp)) {
+#           n <- ifelse(length(meancellrank[tmp==i])>2, 2, 1)
+#           meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$rapeseed[tmp==i])-n)
+#         }
+#         # 1.3) in case of still tie: use puls_pro cellrank
+#         tmp <- meancellrank
+#         for (i in sort(tmp)) {
+#           n <- ifelse(length(meancellrank[tmp==i])>2, 2, 1)
+#           meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$puls_pro[tmp==i])-n)
+#         }
+#         rm(tmp)
 
-        # average cell rank over proxy crops
-        cellrank <- as.list(cellrank)
-        tmp      <- floor(rank(rowMeans(do.call(cbind,cellrank))))
-        meancellrank   <- tmp
-        meancellrank[] <- NA
-        # in case of a tie: use maiz cellrank
-        for (i in sort(tmp)) {
-          if (length(meancellrank[tmp==i])>2) {
-            n <- 2
-          } else {
-            n <- 1
+        # 2.) rank left-over ties by cell-id
+        if (unique(meancellrank[duplicated(meancellrank)])>0) {
+          for (i in unique(meancellrank[duplicated(meancellrank)])) {
+            l <- length(meancellrank[meancellrank==i])
+            n <- i - floor(l/2)
+            for (k in (1:l)) {
+              meancellrank[meancellrank==i][[1]] <- n-1+k
+            }
           }
-          meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$maiz[tmp==i])-n)
         }
-        # in case of still tie: use rapeseed cellrank
-        tmp <- meancellrank
-        for (i in sort(tmp)) {
-          if (length(meancellrank[tmp==i])>2) {
-            n <- 2
-          } else {
-            n <- 1
-          }
-          meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$rapeseed[tmp==i])-n)
-        }
-        # in case of still tie: use puls_pro cellrank
-        tmp <- meancellrank
-        for (i in sort(tmp)) {
-          if (length(meancellrank[tmp==i])>2) {
-            n <- 2
-          } else {
-            n <- 1
-          }
-          #n <- ifelse(length(meancellrank[tmp==i])>2, 2, 1)
-          meancellrank[tmp==i] <- tmp[tmp==i] + (rank(-cellrank$puls_pro[tmp==i])-n)
-        }
-        rm(tmp)
+
         # rank left-over ties by cell-id
-        tmp <- meancellrank
-        for (i in unique(sort(tmp))) {
-          c <- which(meancellrank==i)
-          if (length(meancellrank[tmp==i])>1) {
-            if (length(meancellrank[tmp==i])>2) {
-              n <- -1
-            } else {
-              n <- 0
-            }
-            for (k in (1:length(meancellrank[which(meancellrank==i)]))){
-              meancellrank[c] <- meancellrank[c]+n
-              n <- n+1
-            }
-          }
-        }
+        # tmp <- meancellrank
+        # for (i in unique(sort(tmp))) {
+        #   c <- which(meancellrank==i)
+        #   if (length(meancellrank[tmp==i])>1) {
+        #     if (length(meancellrank[tmp==i])>2) {
+        #       n <- -1
+        #     } else {
+        #       n <- 0
+        #     }
+        #     for (k in (1:length(meancellrank[which(meancellrank==i)]))){
+        #       meancellrank[c] <- meancellrank[c]+n
+        #       n <- n+1
+        #     }
+        #   }
+        # }
+
 
         ############################
         ### Allocation Algorithm ###
@@ -547,7 +537,7 @@ calcAvlWater <- function(selectyears="all",
           # Allocate water for full irrigation to cell with highest yield
 
           #l <- sum(!is.na(unique(meancellrank)))
-          for (c in (1:max(meancellrank,na.rm=T))){ # (1:max(meancellrank,na.rm=T))
+          for (c in (1:max(meancellrank,na.rm=T))){
               #if (any(!is.na(meancellrank))){
               # highest ranked cell:
               #c  <- cells[which(meancellrank==min(meancellrank,na.rm=TRUE))]    #cell number
@@ -669,7 +659,7 @@ calcAvlWater <- function(selectyears="all",
       } else {
         stop("Please choose allocation rule for river basin discharge allocation algorithm")
       }
-    }
+    #}
 
     # update minimum water required in cell:
     #required_wat_min <- required_wat_min + frac_fullirrig*required_wat_fullirrig_ww
