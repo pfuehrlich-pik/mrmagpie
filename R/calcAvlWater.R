@@ -461,23 +461,23 @@ calcAvlWater <- function(selectyears="all",
         ### !!!! make rank algorithm work for meancellrank again!
 
         # # Solve ties in cell ranking
-        # proxycrop=c("maiz", "rapeseed", "puls_pro")
-        # for (crop in proxycrop) {
-        #
-        #   if (length(meancellrank)!=length(unique(meancellrank))){
-        #     cropcellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
-        #                                selectyears="y1995", cells="lpjcell", crops="magpie", method="cropcellrank", proxycrop=crop, aggregate=FALSE)
-        #     cropcellrank <- as.array(cropcellrank)[,1,1]
-        #
-        #     for (i in unique(meancellrank[duplicated(meancellrank)])) {
-        #
-        #       cells <- which(meancellrank==i)
-        #       l     <- length(meancellrank[meancellrank==i])
-        #       n     <- i - floor(l/2)
-        #       meancellrank[cells] <- rank(cropcellrank[cells])+n-1
-        #     }
-        #   }
-        # }
+         # proxycrop=c("maiz", "rapeseed", "puls_pro")
+         # for (crop in proxycrop) {
+         #
+         #   if (length(meancellrank)!=length(unique(meancellrank))){
+         #     cropcellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
+         #                                selectyears="y1995", cells="lpjcell", crops="magpie", method="cropcellrank", proxycrop=crop, aggregate=FALSE)
+         #     cropcellrank <- as.array(cropcellrank)[,1,1]
+         #
+         #     for (i in unique(meancellrank[duplicated(meancellrank)])) {
+         #
+         #       cells <- which(meancellrank==i)
+         #       l     <- length(meancellrank[meancellrank==i])
+         #       n     <- i - floor(l/2)
+         #       meancellrank[cells] <- rank(cropcellrank[cells])+n-1
+         #     }
+         #   }
+         # }
 #
 #         # Solve ties in cell ranking
 #         # 1.1) in case of tie use maize cellrank
@@ -559,71 +559,74 @@ calcAvlWater <- function(selectyears="all",
             }
           }
         } else if (allocationrule=="upstreamfirst") {
+          # Allocate full irrigation requirements to most upstream cell first (calcorder)
 
           # Only consider cells where irrigation potential > 0
           # (or even: above certain threshold (e.g. 1 t/ha), maybe flexible (set in argument))
-          # Allocate full irrigation requirements to most upstream cell first (calcorder)
+          # STILL MISSING
 
-          # for (o in 1:max(calcorder)){
-          #   # Note: the calcorder ensures that the upstreamcells are calculated first
-          #   for (c in which(calcorder==o)){
-          #    # Check for yield gain potential by irrigation in cell
-          #    if (any(yield_gain[c,,]>gainthreshold)){
-          #      # Check whether basin discharge sufficient to fulfill requirements
-          #      if (basin_discharge[b]>0) {
-          #        # available water for additional irrigation
-          #        avl_wat <- max(discharge[c]-required_wat_min[c],0)
-          #        # how much withdrawals can be fulfilled by available water
-          #        if (required_wat_fullirrig_ww[c]>0){
-          #          frac_fullirrig[c]   <- min(avl_wat/required_wat_fullirrig_ww[c],1)
-          #          # check whether additional water consumption can be fulfilled by left-over basin discharge
-          #          if (basin_discharge[b] < required_wat_fullirrig_wc[c]*frac_fullirrig[c]) {
-          #            frac_fullirrig[c] <- basin_discharge[b]/required_wat_fullirrig_wc[c]
-          #          }
-          #          # check whether discharge in downstreamcells sufficient to fulfill required water consumption
-          #          #if (min(discharge[c(downstreamcells[[c[k]]],c[k])]) > 0) {
-          #          if (min(discharge[c(downstreamcells[[c]],c)]) < required_wat_fullirrig_wc[c]*frac_fullirrig[c]) {
-          #            frac_fullirrig[c] <- min(discharge[c(downstreamcells[[c]],c)])/required_wat_fullirrig_wc[c]
-          #          }
-          #          #} else {
-          #          #  frac_fullirrig[c] <- 0
-          #          #}
-          #        } else {
-          #          frac_fullirrig[c]   <- 0
-          #        }
-          #        # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
-          #        discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
-          #        # left-over basin discharge after this allocation step:
-          #        basin_discharge[b] <- basin_discharge[b] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
-          #      }
-          #    } else {
-          #      frac_fullirrig[c]   <- 0
-          #    }
+          # loop over basin
+          for (b in unique(endcell) ) {
 
-            ## Necessary to update nextcell inflow???
-            #   # available water
-            #   avl_wat_act[c] <- inflow[c] + yearly_runoff[c,y] - lake_evap_new[c]
-            #   # discharge
-            #   discharge[c]   <- avl_wat_act[c] - NAg_wc[c,y,scen]*frac_NAg_fulfilled[c] - CAC_magpie[c]*frac_CAg_fulfilled[c]
-            #   # inflow into nextcell
-            #   if (nextcell[c]>0){
-            #     inflow[nextcell[c]] <- inflow[nextcell[c]] + discharge[c]
-            #   }
-          #   }
-          # }
+            # allocation to upstream first (calcorder=1)
+            for (o in (1:max(calcorder[which(endcell==b)],na.rm=T))){
+              c <- which(endcell==b & calcorder==o)
+
+              # several cells with same calcorder in one basin
+              for (k in (1:length(which(endcell==b & calcorder==o)))){
+                # available water for additional irrigation withdrawals
+                avl_wat_ww <- max(discharge[c[k]]-required_wat_min_allocation[c[k]],0)
+
+                # withdrawal constraint
+                if (required_wat_fullirrig_ww[c[k]]>0) {
+                  # how much withdrawals can be fulfilled by available water
+                  frac_fullirrig[c[k]] <- min(avl_wat_ww/required_wat_fullirrig_ww[c[k]],1)
+
+                  # consumption constraint
+                  if (required_wat_fullirrig_wc[c[k]]>0 & length(downstreamcells[[c[k]]])>0) {
+                    # available water for additional irrigation consumption (considering downstream availability)
+                    avl_wat_wc          <- max(min(discharge[downstreamcells[[c[k]]]] - required_wat_min_allocation[downstreamcells[[c[k]]]]),0)
+                    # how much consumption can be fulfilled by available water
+                    frac_fullirrig[c[k]]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c[k]],frac_fullirrig[c[k]])
+                    # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
+                    discharge[c(downstreamcells[[c[k]]],c[k])] <- discharge[c(downstreamcells[[c[k]]],c[k])] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
+                  }
+                  # update minimum water required in cell:
+                  required_wat_min_allocation[c[k]] <- required_wat_min_allocation[c[k]] + frac_fullirrig[c[k]]*required_wat_fullirrig_ww[c[k]]
+                }
+              }
+            }
+          }
         } else if (allocationrule=="equality") {
 
           # Repeat optimization algorithm several times
           # Instead of full irrigation, only up to x% (e.g.20%) are allocated to most efficient cell
-          # Repeat until all river basin discharge is allocated
-          ## Note: can actually be implemented in option 1 (with x as argument)
+          # Repeat until all river basin discharge is allocated ---> STILL MISSING
 
-          # END <- FALSE
-          # while (!END){
-          #
-          #   # stop when all basin discharge is allocated
-          #   END <- basin_discharge[b]==0
-          # }
+          for (c in (1:max(meancellrank,na.rm=T))){
+            # available water for additional irrigation withdrawals
+            avl_wat_ww <- max(discharge[c]-required_wat_min_allocation[c],0)
+
+            # withdrawal constraint
+            if (required_wat_fullirrig_ww[c]>0) {
+              # how much withdrawals can be fulfilled by available water
+              frac_fullirrig[c] <- min(avl_wat_ww/required_wat_fullirrig_ww[c],1)
+
+              # consumption constraint
+              if (required_wat_fullirrig_wc[c]>0 & length(downstreamcells[[c]])>0) {
+                # available water for additional irrigation consumption (considering downstream availability)
+                avl_wat_wc          <- max(min(discharge[downstreamcells[[c]]] - required_wat_min_allocation[downstreamcells[[c]]]),0)
+                # how much consumption can be fulfilled by available water
+                frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c],frac_fullirrig[c])
+                # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
+                discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
+              }
+
+              frac_fullirrig[c] <- frac_fullirrig[c]*allocationshare
+              # update minimum water required in cell:
+              required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c]
+            }
+          }
       } else {
         stop("Please choose allocation rule for river basin discharge allocation algorithm")
       }
@@ -666,6 +669,8 @@ calcAvlWater <- function(selectyears="all",
       #################
       ### MAIN OUTPUT VARIABLE: water available for irrigation (consumptive agricultural use)
       wat_avl_irrig_cons <- CAC_magpie*frac_CAg_fulfilled + frac_fullirrig*required_wat_fullirrig_wc
+      wat_avl_irrig_cons <- discharge - required_wat_min_allocation
+
 
     }
   }

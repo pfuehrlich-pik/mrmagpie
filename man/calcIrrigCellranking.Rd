@@ -12,7 +12,7 @@ calcIrrigCellranking(
   dof = 4,
   harmonize_baseline = FALSE,
   ref_year = "y2015",
-  years = "y1995",
+  selectyears = "y1995",
   cells = "lpjcell",
   crops = "magpie",
   method = "meancellrank",
@@ -34,7 +34,7 @@ calcIrrigCellranking(
 
 \item{ref_year}{just specify for harmonize_baseline != FALSE : Reference year}
 
-\item{years}{years selected for yield gain}
+\item{selectyears}{years selected for yield gain}
 
 \item{cells}{switch between "lpjcell" (67420) and "magpiecell" (59199)}
 

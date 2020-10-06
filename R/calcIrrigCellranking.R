@@ -51,7 +51,7 @@ calcIrrigCellranking <- function(version="LPJmL5", climatetype="HadGEM2_ES:rcp2p
   } else if (method=="meancroprank"){
 
     # normalize yield gains of proxy crops
-    ##### STILL MISSING
+    ##### STILL MISSING!!!!!
 
     # calculate average yield gain over normalized proxy crops
     yield_gain <- dimSums(yield_gain,dim=3)/length(getNames(yield_gain))
