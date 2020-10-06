@@ -29,9 +29,9 @@ readISIMIPinputs <- function(subtype="ISIMIP3b:water:histsoc.waterabstraction"){
     # Time frame to be read in
     if(time=="histsoc"){
       readyears  <- paste0(time,"_annual_1901_2014")
-   } else if(time=="2015soc"){
+    } else if(time=="2015soc"){
       readyears  <- paste0(time,"_annual_2015_2100")
-   }
+    }
 
     # List of input files
     input <- list()

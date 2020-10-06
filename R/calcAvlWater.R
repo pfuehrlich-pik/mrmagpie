@@ -366,7 +366,7 @@ calcAvlWater <- function(selectyears="all",
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
       #-#-#-#-# Output reporting #-#-#-#-#
       # Check whether number of cells where water requirements exceed availability has increased
-      if (sum(required_wat_min-avl_wat_act>1e-3)>check1) warning("River routing violation of water availability.")
+      if (sum(required_wat_min-avl_wat_act>1e-3)>check1) warning("River routing violation of water availability")
 
       # Output reporting
       ratio_routing3 <- required_wat_min/avl_wat_act
