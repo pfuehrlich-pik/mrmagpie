@@ -58,7 +58,7 @@ calcAvlWater <- function(selectyears="all",
   yearly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="runoff_lpjcell", aggregate=FALSE,
                                         harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
   yearly_runoff <- as.array(collapseNames(yearly_runoff))
-  yearly_runoff     <- yearly_runoff[,,1]
+  yearly_runoff <- yearly_runoff[,,1]
   years <- getYears(yearly_runoff)
 
   # Yearly lake evapotranspiration (in mio. m^3 per year)
@@ -154,7 +154,7 @@ calcAvlWater <- function(selectyears="all",
           ### Natural water balance
           # lake evap that can be fulfilled (if water available: lake evaporation considered; if not: lake evap is reduced respectively):
           lake_evap_new[c] <- min(lake_evap[c,y], inflow_nat[c]+yearly_runoff[c,y])
-          # discharge
+          # natural discharge
           discharge_nat[c] <- inflow_nat[c] + yearly_runoff[c,y] - lake_evap_new[c]
           # inflow into nextcell
           if (nextcell[c]>0){
@@ -204,7 +204,7 @@ calcAvlWater <- function(selectyears="all",
           # -> no more water can be withdrawn
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
-            # -> reduce non-agricultural water use in upstream cells
+            # -> reduce non-agricultural water consumption in upstream cells
             # -> locally: cannot withdraw
             if (length(upstreamcells[c])>0){
               # upstream non-agricultural water consumption
@@ -305,7 +305,7 @@ calcAvlWater <- function(selectyears="all",
           # -> no more water can be withdrawn
           if (avl_wat_act[c]<required_wat_min[c]){
             # if cell has upstreamcells: upstreamcells must release missing water (cannot be consumed upstream)
-            # -> reduce committed agricultural water use in upstream cells
+            # -> reduce committed agricultural water consumption in upstream cells
             # -> locally: cannot withdraw
             if (length(upstreamcells[c])>0){
               # upstream committed agricultural water consumption:
