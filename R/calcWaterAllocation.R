@@ -9,12 +9,12 @@
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
 #' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
 #' @param selectyears Years to be returned
-#' @param output water availability output to be returned: withdrawal or consumption
-#' @param allocationrule rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")
-#' @param allocationshare share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")
-#' @param gainthreshold threshold of yield improvement potential required for water allocation in upstreamfirst algorithm (in tons per ha)
-#' @param irrigationsystem irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")
-#' @param irrigini when "initialization" selected for irrigation system: choose initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")
+#' @param output      Water availability output to be returned: withdrawal or consumption
+#' @param allocationrule  Rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")
+#' @param allocationshare Share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")
+#' @param gainthreshold   Threshold of yield improvement potential required for water allocation in upstreamfirst algorithm (in tons per ha)
+#' @param irrigationsystem Irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")
+#' @param irrigini         When "initialization" selected for irrigation system: choose initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")
 #'
 #' @import magclass
 #' @import madrat
