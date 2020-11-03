@@ -1,6 +1,7 @@
 #' @title calcIrrigationSystem
 #' @description This function returns the irrigation system share initialization
-#' @param source data source to be used: Jaegermeyr (irrigation system share based on FAO 2014, ICID 2012 and Rohwer et al. 2007) or LPJmL (dominant irrigation system per country) and number of cells (lpjcell or magpiecell) separated by _
+#'
+#' @param source Data source to be used: Jaegermeyr (irrigation system share based on FAO 2014, ICID 2012 and Rohwer et al. 2007) or LPJmL (dominant irrigation system per country) and number of cells (lpjcell or magpiecell) separated by _
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -8,7 +9,6 @@
 #' @examples
 #' \dontrun{ calcOutput("IrrigationSystem",source="Jaegermeyr_lpjcell",aggregate = FALSE) }
 #'
-#' @import madrat
 #' @import magclass
 
 calcIrrigationSystem <- function(source="Jaegermeyr_lpjcell"){

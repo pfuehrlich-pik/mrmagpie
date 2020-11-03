@@ -1,38 +1,31 @@
-#' @title calcIrrigation2
-#' @description This function calculates irrigation water requirements based on LPJmL plant blue water consumption and different irrigation efficiencies
+#' @title calcIrrigWatRequirements
+#' @description This function calculates irrigation water requirements based on LPJmL blue water consumption of plants and considering irrigation efficiencies
 #'
-#' @param selectyears years to be returned
-#' @param version Switch between LPJmL4 and LPJmL5
+#' @param selectyears Years to be returned
+#' @param version     Switch between LPJmL4 and LPJmL5
 #' @param climatetype Switch between different climate scenarios (default: "CRU_4")
-#' @param cells Switch between "lpjcell" (67420) and "magpiecell" (59199)
-#' @param crops selects "magpie" (default) or "lpjml" crops
-#' @param time Time smoothing: average, spline or raw (default)
+#' @param cells       Switch between "lpjcell" (67420) and "magpiecell" (59199)
+#' @param crops       Selects "magpie" (default) or "lpjml" crops
+#' @param time            Time smoothing: average, spline or raw (default)
 #' @param averaging_range only specify if time=="average": number of time steps to average
 #' @param dof             only specify if time=="spline": degrees of freedom needed for spline
 #' @param harmonize_baseline FALSE (default): no harmonization, TRUE: if a baseline is specified here data is harmonized to that baseline (from ref_year on)
-#' @param ref_year Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
-#' @param irrig_requirement consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements
+#' @param ref_year           Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)
+#' @param irrig_requirement  Consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier, Jens Heinke
 #'
 #' @examples
-#' \dontrun{ calcOutput("Irrigation2", aggregate = FALSE) }
+#' \dontrun{ calcOutput("IrrigWatRequirements", aggregate=FALSE) }
 #'
-#' @importFrom magpiesets findset
-#' @importFrom magclass setNames
+#' @import magpiesets
+#' @import magclass
+#' @import madrat
 
-#### Rewrite this function!!!!
-### Get: crop water requirement (per crop) from LPJmL (e.g. NIR, blue water consumption, blue water transpiration?)
-  # blue water consumption: crop-specific and climate-specific and spatially explicit
-### Get: Field and conveyance efficiencies from literature (or: LPJmL)
-  # conveyance efficiency: irrigation-system-specific
-  # field efficiency: crop-specific and irrigation-system-specific
-
-
-calcIrrigation2 <- function(selectyears="all", cells="lpjcell", crops="magpie",
-                           version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
-                           harmonize_baseline=FALSE, ref_year=NULL, irrig_requirement="withdrawal"){
+calcIrrigWatRequirements <- function(selectyears="all", cells="lpjcell", crops="magpie",
+                                     version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="raw", averaging_range=NULL, dof=NULL,
+                                     harmonize_baseline=FALSE, ref_year=NULL, irrig_requirement="withdrawal"){
 
   sizelimit <- getOption("magclass_sizeLimit")
   options(magclass_sizeLimit=1e+12)
@@ -110,7 +103,7 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell", crops="magpie",
 
     } else {
       # Time smoothing:
-      x     <- calcOutput("Irrigation2", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
+      x     <- calcOutput("IrrigWatRequirements", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
                           harmonize_baseline=FALSE, time="raw", irrig_requirement=irrig_requirement)
 
       # Smoothing data through average:
@@ -135,9 +128,9 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell", crops="magpie",
       stop("Harmonization with raw data not possible. Select time='spline' when applying harmonize_baseline=TRUE")
     } else {
       # Load smoothed data
-      baseline   <- calcOutput("Irrigation2", version=version, climatetype=harmonize_baseline, crops=crops, aggregate=FALSE,
+      baseline   <- calcOutput("IrrigWatRequirements", version=version, climatetype=harmonize_baseline, crops=crops, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
-      x          <- calcOutput("Irrigation2", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
+      x          <- calcOutput("IrrigWatRequirements", version=version, climatetype=climatetype, crops=crops, aggregate=FALSE,
                              harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range, irrig_requirement=irrig_requirement)
       # Harmonize to baseline
       irrig_requirements <- toolHarmonize2Baseline(x=x, base=baseline, ref_year=ref_year, limited=TRUE, hard_cut=FALSE)
@@ -172,6 +165,6 @@ calcIrrigation2 <- function(selectyears="all", cells="lpjcell", crops="magpie",
     x=out,
     weight=NULL,
     unit="m^3 per ha per yr",
-    description="Irrigation water consumption and withdrawal requirements for irrigation for different crop types under different irrigation systems",
+    description="Irrigation water requirements for irrigation for different crop types under different irrigation systems",
     isocountries=FALSE))
 }

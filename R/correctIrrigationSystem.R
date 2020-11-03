@@ -10,7 +10,6 @@
 #'   readSource("IrrigationSystem", convert="onlycorrect")
 #' }
 #'
-#' @importFrom mrcommons toolCell2isoCell
 
 correctIrrigationSystem <- function(x){
   return(x)

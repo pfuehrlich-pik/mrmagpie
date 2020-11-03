@@ -129,6 +129,8 @@ calcAvlWater <- function(selectyears="all",
   #############################
   for (y in "y1995"){
     for (scen in "ssp2"){
+     # for (EFR_scen in c("EFR_on", "EFR_off"))
+
       ## Global river routing variables
       # Naturalized discharge
       discharge_nat <- array(data=0,dim=NCELLS,dimnames=list(names(EFR_magpie)))
@@ -447,16 +449,11 @@ calcAvlWater <- function(selectyears="all",
       #required_wat_fullirrig_wc <- required_wat_fullirrig_wc - CAC_magpie*frac_CAg_fulfilled
       ####???? necessary again? or when subtract area as above not necessary? -> which approach makes more sense?
 
-      # Minimum water required
-      required_wat_min_allocation <- required_wat_min
 
-      ### River basin discharge allocation ###
-      #for (b in unique(cell_basin_mapping)) {
-
-        # Global cell rank based on yield gain potential by irrigation of proxy crops: maize, rapeseed, pulses
-        meancellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
-                                   selectyears="y1995", cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
-        meancellrank <- as.array(meancellrank)[,1,1]
+      # Global cell rank based on yield gain potential by irrigation of proxy crops: maize, rapeseed, pulses
+      meancellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
+                                 cellrankyear="y1995", cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
+      meancellrank <- as.array(meancellrank)[,1,1]
 
         ### !!!! make rank algorithm work for meancellrank again!
 
@@ -501,7 +498,7 @@ calcAvlWater <- function(selectyears="all",
 #         }
 #         rm(tmp)
 
-        # 2.) rank left-over ties by cell-id
+        # rank ties by cell-id
         if (unique(meancellrank[duplicated(meancellrank)])>0) {
           for (i in unique(meancellrank[duplicated(meancellrank)])) {
             l <- length(meancellrank[meancellrank==i])
@@ -533,8 +530,11 @@ calcAvlWater <- function(selectyears="all",
         ############################
         ### Allocation Algorithm ###
         ############################
+        # Minimum water required
+        required_wat_min_allocation <- required_wat_min
+
+        # Allocate water for full irrigation to cell with highest yield improvement through irrigation
         if (allocationrule=="optimization") {
-          # Allocate water for full irrigation to cell with highest yield
 
           for (c in (1:max(meancellrank,na.rm=T))){
             # available water for additional irrigation withdrawals
@@ -668,8 +668,8 @@ calcAvlWater <- function(selectyears="all",
       #### OUTPUTS ####
       #################
       ### MAIN OUTPUT VARIABLE: water available for irrigation (consumptive agricultural use)
-      wat_avl_irrig_cons <- CAC_magpie*frac_CAg_fulfilled + frac_fullirrig*required_wat_fullirrig_wc
-      wat_avl_irrig_cons <- discharge - required_wat_min_allocation
+      wat_avl_irrig_c[y,EFR_scen,scen] <- CAC_magpie*frac_CAg_fulfilled + frac_fullirrig*required_wat_fullirrig_wc
+      wat_avl_irrig_w[y,EFR_scen,scen] <- CAW_magpie*frac_CAg_fulfilled + frac_fullirrig*required_wat_fullirrig_ww
 
 
     }
@@ -704,175 +704,6 @@ calcAvlWater <- function(selectyears="all",
   ## Diff: wat_avl_consumption3-wat_avl_consumption2; wat_avl_consumption2-wat_avl_consumption1; wat_avl_consumption1-1)
   # (as fraction to discharge_nat)
   # always relative to discharge_nat
-
-
-
-
-  for (b in unique(cell_basin_mapping)) {
-    if (basin_discharge[b]!=0) {
-      print("works")
-    } else {
-      print("doesn't work")
-    }
-  }
-
-
-#####################################################
-  #### Old function
-
-  # if(harmonize_baseline==FALSE){
-  #
-  #   if(time=="raw"){
-  #
-  #     ### Monthly Discharge (unit (after calcLPJmL): mio. m^3/month)
-  #     monthly_discharge_magpie <- calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="mdischarge", aggregate=FALSE,
-  #                                            harmonize_baseline=FALSE,
-  #                                            time="raw")
-  #     # Transform to array (faster calculation)
-  #     monthly_discharge_magpie <- as.array(collapseNames(monthly_discharge_magpie))
-  #
-  #     ### Monthly Runoff (unit (after calcLPJmL): mio. m^3/month)
-  #     monthly_runoff_magpie    <- calcOutput("LPJmL", version=version, climatetype=climatetype, subtype="mrunoff", aggregate=FALSE,
-  #                                            harmonize_baseline=FALSE,
-  #                                            time="raw")
-  #     # Transform to array (faster calculation)
-  #     monthly_runoff_magpie    <- as.array(collapseNames(monthly_runoff_magpie))
-  #
-  #     ### Calculate available water per month (avl_water_month)
-  #     # Empty array
-  #     avl_water_month     <- monthly_runoff_magpie
-  #     avl_water_month[,,] <- NA
-  #
-  #     ## River basin water allocation algorithm:
-  #     # River basin information
-  #     basin_code <- toolGetMapping("rivermapping.csv",type="cell")
-  #     basin_code <- basin_code$basincode
-  #
-  #     # Sum the runoff in all basins and allocate it to the basin cells with discharge as weight
-  #     for(basin in unique(basin_code)){
-  #       basin_cells     <- which(basin_code==basin)
-  #       basin_runoff    <- colSums(monthly_runoff_magpie[basin_cells,,,drop=FALSE])
-  #       basin_discharge <- colSums(monthly_discharge_magpie[basin_cells,,,drop=FALSE])
-  #       for(month in dimnames(avl_water_month)[[3]]){
-  #         avl_water_month[basin_cells,,month] <- t(basin_runoff[,month]*t(monthly_discharge_magpie[basin_cells,,month])/basin_discharge[,month])
-  #       }
-  #     }
-  #     # Remove no longer needed objects
-  #     rm(basin_discharge,basin_runoff)
-  #
-  #     # avl_water_month contain NA's wherever basin_discharge was 0 -> Replace NA's by 0
-  #     avl_water_month[is.nan(avl_water_month)] <- 0
-  #     avl_water_month <- as.magpie(avl_water_month)
-  #
-  #   } else {
-  #     # Time smoothing:
-  #     x     <- calcOutput("AvlWater", version=version, climatetype=climatetype, seasonality="monthly", aggregate=FALSE,
-  #                         harmonize_baseline=FALSE, time="raw")
-  #
-  #     if(time=="average"){
-  #
-  #       # Smoothing data through average:
-  #       avl_water_month <- toolTimeAverage(x, averaging_range=averaging_range)
-  #
-  #     } else if(time=="spline"){
-  #
-  #       # Smoothing data with spline method:
-  #       avl_water_month <- toolTimeSpline(x, dof=dof)
-  #       # Replace value in 2100 with value from 2099 (LPJmL output ends in 2099)
-  #       if ("y2099" %in% getYears(avl_water_month)) {
-  #         avl_water_month <- toolFillYears(avl_water_month, c(getYears(avl_water_month, as.integer=TRUE)[1]:2100))
-  #       }
-  #
-  #     } else if(time!="raw"){
-  #       stop("Time argument not supported!")
-  #     }
-  #   }
-  #
-  # } else {
-  #
-  #   if(time=="raw"){
-  #     stop("Harmonization with raw data not possible. Select time='spline' when applying harmonize_baseline=TRUE")
-  #   } else {
-  #     # Load smoothed data
-  #     baseline <- calcOutput("AvlWater", version=version, climatetype=harmonize_baseline, seasonality="monthly", aggregate=FALSE,
-  #                            harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
-  #     x        <- calcOutput("AvlWater", version=version, climatetype=climatetype, seasonality="monthly", aggregate=FALSE,
-  #                            harmonize_baseline=FALSE, time=time, dof=dof, averaging_range=averaging_range)
-  #     # Harmonize to baseline
-  #     avl_water_month <- toolHarmonize2Baseline(x=x, base=baseline, ref_year=ref_year, limited=TRUE, hard_cut=FALSE)
-  #   }
-  # }
-  #
-  # if(selectyears!="all"){
-  #   years           <- sort(findset(selectyears,noset = "original"))
-  #   avl_water_month <- avl_water_month[,years,]
-  # }
-  #
-  # ###########################################
-  # ######### RETURN FUNCTION OUTPUT ##########
-  # ###########################################
-  #
-  # ### Available water per cell per month
-  # if(seasonality=="monthly"){
-  #   # Check for NAs
-  #   if(any(is.na(avl_water_month))){
-  #     stop("produced NA water availability")
-  #   }
-  #   out=avl_water_month
-  #   description="Available water per cell per month (based on runoff and discharge from LPJmL)"
-  # }
-  #
-  # ### Total water available per cell per year
-  # if(seasonality=="total"){
-  #   # Sum up over all month:
-  #   avl_water_total <- dimSums(avl_water_month, dim=3)
-  #   # Check for NAs
-  #   if(any(is.na(avl_water_total))){
-  #     stop("produced NA water availability")
-  #   }
-  #   out=avl_water_total
-  #   description="Total available water per year"
-  # }
-  #
-  # ### Water available in growing period per cell per year
-  # if(seasonality=="grper"){
-  #   # magpie object with days per month with same dimension as avl_water_month
-  #   tmp <- c(31,28,31,30,31,30,31,31,30,31,30,31)
-  #   month_days     <- new.magpie(names=dimnames(avl_water_month)[[3]])
-  #   month_days[,,] <- tmp
-  #   month_day_magpie     <- as.magpie(avl_water_month)
-  #   month_day_magpie[,,] <- 1
-  #   month_day_magpie     <- month_day_magpie * month_days
-  #
-  #   # Daily water availability
-  #   avl_water_day <- avl_water_month/month_day_magpie
-  #
-  #   # Growing days per month
-  #   grow_days <- calcOutput("GrowingPeriod", version="LPJmL5", climatetype=climatetype, time=time, dof=dof, averaging_range=averaging_range,
-  #                           harmonize_baseline=harmonize_baseline, ref_year=ref_year, yield_ratio=0.1, aggregate=FALSE)
-  #
-  #   # Adjust years
-  #   years_wat <- getYears(avl_water_day)
-  #   years_grper  <- getYears(grow_days)
-  #   if(length(years_wat)>=length(years_grper)){
-  #     years <- years_grper
-  #   } else {
-  #     years <- years_wat
-  #   }
-  #   rm(years_grper, years_wat)
-  #
-  #   # Available water in growing period per month
-  #   avl_water_grper <- avl_water_day[,years,]*grow_days[,years,]
-  #   # Available water in growing period per year
-  #   avl_water_grper <- dimSums(avl_water_grper, dim=3)
-  #
-  #   # Check for NAs
-  #   if(any(is.na(avl_water_grper))){
-  #     stop("produced NA water availability")
-  #   }
-  #   out=avl_water_grper
-  #   description="Available water in growing period per year"
-  # }
 
   return(list(
     x=out,

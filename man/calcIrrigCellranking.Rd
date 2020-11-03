@@ -12,7 +12,7 @@ calcIrrigCellranking(
   dof = 4,
   harmonize_baseline = FALSE,
   ref_year = "y2015",
-  selectyears = "y1995",
+  cellrankyear = "y1995",
   cells = "lpjcell",
   crops = "magpie",
   method = "meancellrank",
@@ -24,17 +24,17 @@ calcIrrigCellranking(
 
 \item{climatetype}{switch between different climate scenarios for yields}
 
-\item{time}{average, spline or raw (default)}
+\item{time}{time smoothing: average, spline (default) or raw}
 
 \item{averaging_range}{just specify for time=="average": number of time steps to average}
 
 \item{dof}{just specify for time=="spline": degrees of freedom}
 
-\item{harmonize_baseline}{FALSE (default) nothing happens, if a baseline is specified here data is harmonized to that baseline (from ref_year on)}
+\item{harmonize_baseline}{FALSE (default) no harmonization, harmonization: if a baseline is specified here data is harmonized to that baseline (from ref_year onwards)}
 
 \item{ref_year}{just specify for harmonize_baseline != FALSE : Reference year}
 
-\item{selectyears}{years selected for yield gain}
+\item{cellrankyear}{year for which cell rank is calculated}
 
 \item{cells}{switch between "lpjcell" (67420) and "magpiecell" (59199)}
 
@@ -48,7 +48,7 @@ calcIrrigCellranking(
 magpie object in cellular resolution
 }
 \description{
-This function calculates a cellranking for the river basin discharge allocation based on yield improvement potential
+This function calculates a cellranking for the river basin discharge allocation based on yield improvement potential through
 }
 \examples{
 \dontrun{ calcOutput("calcIrrigCellranking", aggregate=FALSE) }

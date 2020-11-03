@@ -28,12 +28,12 @@ calcCommittedAgWaterUse <- function(version="LPJmL5", climatetype="HadGEM2_ES:rc
   irrigation_system <- calcOutput("IrrigationSystem", source=irrigini, aggregate=FALSE)
 
   ## Read in Irrigation Water Withdrawals (in m^3 per hectar per year) [smoothed]
-  irrig_withdrawal  <- calcOutput("Irrigation2", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, irrig_requirement="withdrawal", aggregate=FALSE)
+  irrig_withdrawal  <- calcOutput("IrrigWatRequirements", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, irrig_requirement="withdrawal", aggregate=FALSE)
   # Pasture is not irrigated in MAgPIE
   irrig_withdrawal  <- irrig_withdrawal[,,"pasture",invert=T]
 
   ## Read in Irrigation Water Consumption (in m^3 per hectar per year) [smoothed]
-  irrig_consumption <- calcOutput("Irrigation2", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, irrig_requirement="consumption", aggregate=FALSE)
+  irrig_consumption <- calcOutput("IrrigWatRequirements", version="LPJmL5", cells="lpjcell", selectyears=iniyear, climatetype=climatetype, harmonize_baseline=FALSE, time=time, dof=dof, irrig_requirement="consumption", aggregate=FALSE)
   # Pasture is not irrigated in MAgPIE
   irrig_consumption <- irrig_consumption[,,"pasture",invert=T]
 
