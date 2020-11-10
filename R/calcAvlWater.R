@@ -179,7 +179,7 @@ calcAvlWater <- function(selectyears="all",
       ratio_routing1[which(required_wat_min==0 & discharge_nat==0)] <- NA
       ratio_routing1[which(ratio_routing1>1)] <- 1
 
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing1))
+      p1 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing1), legendname="Ratio", title="1a")
 
       # Downstream constraint
       tmp                  <- pmax(discharge_nat - required_wat_min,0)
@@ -190,7 +190,7 @@ calcAvlWater <- function(selectyears="all",
         wat_avl_consumption1[c] <- min(tmp[c(downstreamcells[[c]],c)])
       }
 
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption1/discharge_nat)))
+      p2 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption1/discharge_nat)), legendname="Ratio", title="1b")
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
       ### River Routing 2: Non-agricultural uses considering local EFRs ###
@@ -276,7 +276,7 @@ calcAvlWater <- function(selectyears="all",
       ratio_routing2[which(required_wat_min==0 & avl_wat_act==0)] <- NA
       ratio_routing2[which(ratio_routing2>1)] <- 1
 
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing2))
+      p3 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing2), legendname="Ratio", title="2a")
 
       # Downstream consideration
       tmp                  <-  pmax(avl_wat_act - required_wat_min,0)
@@ -288,7 +288,8 @@ calcAvlWater <- function(selectyears="all",
       }
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/discharge_nat)))
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/avl_wat_act)))
+      p4 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption2/avl_wat_act)), legendname="Ratio", title="2b")
+
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
       # inflow needs to be set to 0 prior to every river routing (is recalculated by the routing)
@@ -375,7 +376,7 @@ calcAvlWater <- function(selectyears="all",
       ratio_routing3[which(required_wat_min==0 & avl_wat_act==0)]<-NA
       ratio_routing3[which(ratio_routing3>1)]<-1
 
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3))
+      p5 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(ratio_routing3),legendname="Ratio", title="3a")
 
       # Downstream consideration
       tmp                  <- pmax(avl_wat_act - required_wat_min,0)
@@ -388,8 +389,52 @@ calcAvlWater <- function(selectyears="all",
 
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/discharge_nat)))
       plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/discharge)))
-      plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/avl_wat_act)))
+      p6 <- plotmap2(mrmagpie:::toolLPJarrayToMAgPIEmap(1-(wat_avl_consumption3/avl_wat_act)), legendname="Ratio", title="3b")
       #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+
+      ### River Routing Results export
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/1a.pdf")
+      # 2. Create a plot
+      p1
+      # Close the pdf file
+      dev.off()
+
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/1b.pdf")
+      # 2. Create a plot
+      p2
+      # Close the pdf file
+      dev.off()
+
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/2a.pdf")
+      # 2. Create a plot
+      p3
+      # Close the pdf file
+      dev.off()
+
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/2b.pdf")
+      # 2. Create a plot
+      p4
+      # Close the pdf file
+      dev.off()
+
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/3a.pdf")
+      # 2. Create a plot
+      p5
+      # Close the pdf file
+      dev.off()
+
+      # Open a pdf file
+      pdf("C:/Users/beier/Documents/doktorarbeit/DBU/Reports/Report 2/3b.pdf")
+      # 2. Create a plot
+      p6
+      # Close the pdf file
+      dev.off()
+
 
 
       ##### MAKE SURE THAT DISCHARGE IS >0 (note: or make sure in loop...)
