@@ -52,7 +52,7 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
   magpie2lpj    <- magclassdata$cellbelongings$LPJ_input.Index
   lpj_cells_map <- toolGetMapping("LPJ_CellBelongingsToCountries.csv", type="cell")
 
-  ### Required inputs:
+  ### Required inputs for River Routing:
   # Yearly runoff (mio. m^3 / yr) [smoothed]
   yearly_runoff <- calcOutput("LPJmL", version="LPJmL4", climatetype=climatetype, subtype="runoff_lpjcell", aggregate=FALSE,
                                         harmonize_baseline=FALSE, time="spline", dof=4, averaging_range=NULL)
@@ -109,6 +109,47 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
   CAC_magpie <- as.array(collapseNames(CAC_magpie))
   CAC_magpie <- CAC_magpie[,1,1]
 
+  ### Required inputs for Allocation Algorithm:
+  # Required water for full irrigation per cell (in mio. m^3)
+  required_wat_fullirrig_ww <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears=seq(1995, 2095,by=5), climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, iniyear=1995, iniarea=TRUE, irrig_requirement="withdrawal", cells="lpjcell", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
+  required_wat_fullirrig_ww <- pmax(required_wat_fullirrig_ww,0)
+  required_wat_fullirrig_wc <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears=seq(1995, 2095,by=5), climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, iniyear=1995, iniarea=TRUE, irrig_requirement="consumption", cells="lpjcell", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
+  required_wat_fullirrig_wc <- pmax(required_wat_fullirrig_wc,0)
+
+  # Full irrigation water requirement depending on irrigation system in use
+  if (irrigationsystem=="initialization") {
+    # read in irrigation system area initialization [share of AEI by system]
+    tmp               <- calcOutput("IrrigationSystem", source=irrigini, aggregate=FALSE)
+    irrigation_system <- new.magpie(getCells(tmp), getYears(required_wat_fullirrig_ww), getNames(tmp))
+    getYears(irrigation_system) <- getYears(required_wat_fullirrig_ww)
+    for (y in getYears(required_wat_fullirrig_ww)) {
+      irrigation_system[,y,] <- tmp
+    }
+    # full irrigation water requirements (in mio. m^3)
+    required_wat_fullirrig_ww   <- dimSums(irrigation_system*required_wat_fullirrig_ww,dim=3.1)
+    required_wat_fullirrig_wc   <- dimSums(irrigation_system*required_wat_fullirrig_wc,dim=3.1)
+  } else {
+    # whole area irrigated by one system as selected in argument "irrigationsystem"
+    required_wat_fullirrig_ww <- collapseNames(required_wat_fullirrig_ww[,,irrigationsystem])
+    required_wat_fullirrig_wc <- collapseNames(required_wat_fullirrig_wc[,,irrigationsystem])
+  }
+  # average required water for full irrigation across selected proxy crops
+  required_wat_fullirrig_ww <- dimSums(required_wat_fullirrig_ww,dim=3)/length(getNames(required_wat_fullirrig_ww))
+  required_wat_fullirrig_wc <- dimSums(required_wat_fullirrig_wc,dim=3)/length(getNames(required_wat_fullirrig_wc))
+
+  # transform to array for further calculations
+  required_wat_fullirrig_ww <- as.array(collapseNames(required_wat_fullirrig_ww))[,,1]
+  required_wat_fullirrig_wc <- as.array(collapseNames(required_wat_fullirrig_wc))[,,1]
+
+  # Global cell rank based on yield gain potential by irrigation of proxy crops: maize, rapeseed, pulses
+  meancellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
+                             cellrankyear=seq(1995, 2095,by=5), cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
+  meancellrank <- as.array(meancellrank)[,,1]
+
+
+  ############################################
+  ####### Routing and Allocation Loop ########
+  ############################################
   out_tmp1 <- NULL
   out_tmp2 <- NULL
   out      <- NULL
@@ -117,7 +158,7 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
 
     # Environmental Flow Requirements (in mio. m^3 / yr) [long-term average]
     if (EFP=="on"){
-      EFR_magpie <- calcOutput("calcEnvmtlFlowRequirements", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
+      EFR_magpie <- calcOutput("EnvmtlFlowRequirements", version="LPJmL4", climatetype=climatetype, aggregate=FALSE, cells="lpjcell",
                                LFR_val=0.1, HFR_LFR_less10=0.2, HFR_LFR_10_20=0.15, HFR_LFR_20_30=0.07, HFR_LFR_more30=0.00,
                                EFRyears=c(1980:2010))
     } else if (EFP=="off"){
@@ -128,7 +169,7 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
     EFR_magpie <- EFR_magpie[,1,1]
 
     for (scen in c("ssp1","ssp2","ssp3")){
-      for (y in selectyears) {
+      for (y in selectyears){
 
         #############################
         ####### River routing #######
@@ -321,77 +362,32 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
         ################################################
         ####### River basin discharge allocation #######
         ################################################
-        ### Required water for full irrigation per cell (in m^3)
-        required_wat_fullirrig_ww <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, iniyear=1995, iniarea=TRUE, irrig_requirement="withdrawal", cells="lpjcell", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
-        required_wat_fullirrig_ww <- pmax(required_wat_fullirrig_ww,0)
-        required_wat_fullirrig_wc <- calcOutput("FullIrrigationRequirement", version="LPJmL5", selectyears="y1995", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, iniyear=1995, iniarea=TRUE, irrig_requirement="consumption", cells="lpjcell", aggregate=FALSE)[,,c("maiz","rapeseed","puls_pro")]
-        required_wat_fullirrig_wc <- pmax(required_wat_fullirrig_wc,0)
-
-        # full irrigation water requirement depending on irrigation system in use
-        if (irrigationsystem=="initialization") {
-          # read in irrigation system area initialization [share of AEI by system]
-          irrigation_system           <- calcOutput("IrrigationSystem", source=irrigini, aggregate=FALSE)
-          getYears(irrigation_system) <- getYears(required_wat_fullirrig_ww)
-          required_wat_fullirrig_ww   <- dimSums(irrigation_system*required_wat_fullirrig_ww,dim=3.1)
-          required_wat_fullirrig_wc   <- dimSums(irrigation_system*required_wat_fullirrig_wc,dim=3.1)
-        } else {
-          # whole area irrigated by one system as selected in argument "irrigationsystem"
-          required_wat_fullirrig_ww <- collapseNames(required_wat_fullirrig_ww[,,irrigationsystem])
-          required_wat_fullirrig_wc <- collapseNames(required_wat_fullirrig_wc[,,irrigationsystem])
-        }
-        # Average required water for full irrigation across selected proxy crops
-        required_wat_fullirrig_ww <- dimSums(required_wat_fullirrig_ww,dim=3)/length(getNames(required_wat_fullirrig_ww))
-        required_wat_fullirrig_wc <- dimSums(required_wat_fullirrig_wc,dim=3)/length(getNames(required_wat_fullirrig_wc))
-
-        # transform to array for further calculations
-        required_wat_fullirrig_ww <- as.array(collapseNames(required_wat_fullirrig_ww))[,1,1]
-        required_wat_fullirrig_wc <- as.array(collapseNames(required_wat_fullirrig_wc))[,1,1]
-
-        ### Global cell rank based on yield gain potential by irrigation of proxy crops: maize, rapeseed, pulses
-        meancellrank <- calcOutput("IrrigCellranking", version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4, harmonize_baseline=FALSE, ref_year="y2015",
-                                   cellrankyear="y1995", cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
-        meancellrank <- as.array(meancellrank)[,1,1]
-
-        # rank ties by cell-id
-        if (unique(meancellrank[duplicated(meancellrank)])>0) {
-          for (i in unique(meancellrank[duplicated(meancellrank)])) {
-            l <- length(meancellrank[meancellrank==i])
-            n <- i - floor(l/2)
-            for (k in (1:l)) {
-              meancellrank[meancellrank==i][[1]] <- n-1+k
-            }
-          }
-        }
-
-        ############################
-        ### Allocation Algorithm ###
-        ############################
         # Minimum water required
         required_wat_min_allocation <- required_wat_min
 
         # Allocate water for full irrigation to cell with highest yield improvement through irrigation
         if (allocationrule=="optimization") {
 
-          for (c in (1:max(meancellrank,na.rm=T))){
+          for (c in (1:max(meancellrank[,y],na.rm=T))){
             # available water for additional irrigation withdrawals
             avl_wat_ww <- max(discharge[c]-required_wat_min_allocation[c],0)
 
             # withdrawal constraint
-            if (required_wat_fullirrig_ww[c]>0) {
+            if (required_wat_fullirrig_ww[c,y]>0) {
               # how much withdrawals can be fulfilled by available water
-              frac_fullirrig[c] <- min(avl_wat_ww/required_wat_fullirrig_ww[c],1)
+              frac_fullirrig[c] <- min(avl_wat_ww/required_wat_fullirrig_ww[c,y],1)
 
               # consumption constraint
-              if (required_wat_fullirrig_wc[c]>0 & length(downstreamcells[[c]])>0) {
+              if (required_wat_fullirrig_wc[c,y]>0 & length(downstreamcells[[c]])>0) {
                 # available water for additional irrigation consumption (considering downstream availability)
                 avl_wat_wc          <- max(min(discharge[downstreamcells[[c]]] - required_wat_min_allocation[downstreamcells[[c]]]),0)
                 # how much consumption can be fulfilled by available water
-                frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c],frac_fullirrig[c])
+                frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c,y],frac_fullirrig[c])
                 # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
-                discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
+                discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c,y]*frac_fullirrig[c]
               }
               # update minimum water required in cell:
-              required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c]
+              required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c,y]
             }
           }
         } else if (allocationrule=="upstreamfirst") {
@@ -414,21 +410,21 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
                 avl_wat_ww <- max(discharge[c[k]]-required_wat_min_allocation[c[k]],0)
 
                 # withdrawal constraint
-                if (required_wat_fullirrig_ww[c[k]]>0) {
+                if (required_wat_fullirrig_ww[c[k],y]>0) {
                   # how much withdrawals can be fulfilled by available water
-                  frac_fullirrig[c[k]] <- min(avl_wat_ww/required_wat_fullirrig_ww[c[k]],1)
+                  frac_fullirrig[c[k]] <- min(avl_wat_ww/required_wat_fullirrig_ww[c[k],y],1)
 
                   # consumption constraint
-                  if (required_wat_fullirrig_wc[c[k]]>0 & length(downstreamcells[[c[k]]])>0) {
+                  if (required_wat_fullirrig_wc[c[k],y]>0 & length(downstreamcells[[c[k]]])>0) {
                     # available water for additional irrigation consumption (considering downstream availability)
                     avl_wat_wc          <- max(min(discharge[downstreamcells[[c[k]]]] - required_wat_min_allocation[downstreamcells[[c[k]]]]),0)
                     # how much consumption can be fulfilled by available water
-                    frac_fullirrig[c[k]]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c[k]],frac_fullirrig[c[k]])
+                    frac_fullirrig[c[k]]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c[k],y],frac_fullirrig[c[k]])
                     # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
-                    discharge[c(downstreamcells[[c[k]]],c[k])] <- discharge[c(downstreamcells[[c[k]]],c[k])] - required_wat_fullirrig_wc[c[k]]*frac_fullirrig[c[k]]
+                    discharge[c(downstreamcells[[c[k]]],c[k])] <- discharge[c(downstreamcells[[c[k]]],c[k])] - required_wat_fullirrig_wc[c[k],y]*frac_fullirrig[c[k]]
                   }
                   # update minimum water required in cell:
-                  required_wat_min_allocation[c[k]] <- required_wat_min_allocation[c[k]] + frac_fullirrig[c[k]]*required_wat_fullirrig_ww[c[k]]
+                  required_wat_min_allocation[c[k]] <- required_wat_min_allocation[c[k]] + frac_fullirrig[c[k]]*required_wat_fullirrig_ww[c[k],y]
                 }
               }
             }
@@ -439,28 +435,28 @@ calcWaterAllocation <- function(selectyears="all", output="consumption",
           # Instead of full irrigation, only up to x% (e.g.20%) are allocated to most efficient cell
           # Repeat until all river basin discharge is allocated ---> STILL MISSING
 
-          for (c in (1:max(meancellrank,na.rm=T))){
+          for (c in (1:max(meancellrank[,y],na.rm=T))){
             # available water for additional irrigation withdrawals
             avl_wat_ww <- max(discharge[c]-required_wat_min_allocation[c],0)
 
             # withdrawal constraint
-            if (required_wat_fullirrig_ww[c]>0) {
+            if (required_wat_fullirrig_ww[c,y]>0) {
               # how much withdrawals can be fulfilled by available water
-              frac_fullirrig[c] <- min(avl_wat_ww/required_wat_fullirrig_ww[c],1)
+              frac_fullirrig[c] <- min(avl_wat_ww/required_wat_fullirrig_ww[c,y],1)
 
               # consumption constraint
-              if (required_wat_fullirrig_wc[c]>0 & length(downstreamcells[[c]])>0) {
+              if (required_wat_fullirrig_wc[c,y]>0 & length(downstreamcells[[c]])>0) {
                 # available water for additional irrigation consumption (considering downstream availability)
                 avl_wat_wc          <- max(min(discharge[downstreamcells[[c]]] - required_wat_min_allocation[downstreamcells[[c]]]),0)
                 # how much consumption can be fulfilled by available water
-                frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c],frac_fullirrig[c])
+                frac_fullirrig[c]   <- min(avl_wat_wc/required_wat_fullirrig_wc[c,y],frac_fullirrig[c])
                 # adjust discharge in current cell and downstream cells (subtract irrigation water consumption)
-                discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c]*frac_fullirrig[c]
+                discharge[c(downstreamcells[[c]],c)] <- discharge[c(downstreamcells[[c]],c)] - required_wat_fullirrig_wc[c,y]*frac_fullirrig[c]
               }
 
               frac_fullirrig[c] <- frac_fullirrig[c]*allocationshare
               # update minimum water required in cell:
-              required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c]
+              required_wat_min_allocation[c] <- required_wat_min_allocation[c] + frac_fullirrig[c]*required_wat_fullirrig_ww[c,y]
             }
           }
         } else {

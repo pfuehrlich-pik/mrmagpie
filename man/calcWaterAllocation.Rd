@@ -24,7 +24,7 @@ calcWaterAllocation(
 \arguments{
 \item{selectyears}{Years to be returned}
 
-\item{output}{water availability output to be returned: withdrawal or consumption}
+\item{output}{Water availability output to be returned: withdrawal or consumption}
 
 \item{version}{Switch between LPJmL4 and LPJmL5}
 
@@ -40,15 +40,15 @@ calcWaterAllocation(
 
 \item{ref_year}{Reference year for harmonization baseline (just specify when harmonize_baseline=TRUE)}
 
-\item{allocationrule}{rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")}
+\item{allocationrule}{Rule to be applied for river basin discharge allocation across cells of river basin ("optimization" (default), "upstreamfirst", "equality")}
 
-\item{allocationshare}{share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")}
+\item{allocationshare}{Share of water to be allocated to cell (only needs to be selected in case of allocationrule=="equality")}
 
-\item{gainthreshold}{threshold of yield improvement potential required for water allocation in upstreamfirst algorithm (in tons per ha)}
+\item{gainthreshold}{Threshold of yield improvement potential required for water allocation in upstreamfirst algorithm (in tons per ha)}
 
-\item{irrigationsystem}{irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")}
+\item{irrigationsystem}{Irrigation system to be used for river basin discharge allocation algorithm ("surface", "sprinkler", "drip", "initialization")}
 
-\item{irrigini}{when "initialization" selected for irrigation system: choose initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
+\item{irrigini}{When "initialization" selected for irrigation system: choose initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
 }
 \value{
 magpie object in cellular resolution

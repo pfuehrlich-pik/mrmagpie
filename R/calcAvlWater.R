@@ -500,6 +500,14 @@ calcAvlWater <- function(selectyears="all",
                                  cellrankyear="y1995", cells="lpjcell", crops="magpie", method="meancroprank", proxycrop=c("maiz", "rapeseed", "puls_pro"), aggregate=FALSE)
       meancellrank <- as.array(meancellrank)[,1,1]
 
+
+      # duplicates in same river basin?
+      # for (i in unique(endcell)){
+      #   if(length((meancellrank[endcell==i,"y1995",]))!=length(unique(meancellrank[endcell==i,"y1995",]))){
+      #     print(paste("basin", i, "has",length((meancellrank[endcell==i,"y1995",]))-length(unique(meancellrank[endcell==i,"y1995",])) ,"duplicates"))
+      #   }
+      # }
+
         ### !!!! make rank algorithm work for meancellrank again!
 
         # # Solve ties in cell ranking

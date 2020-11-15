@@ -21,7 +21,7 @@
 #' @import madrat
 #' @import magclass
 
-calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4", time="spline", averaging_range=NULL, dof=4,
+calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", time="spline", averaging_range=NULL, dof=4,
                        harmonize_baseline=FALSE, selectyears=seq(1995, 2095,by=5), cells="magpiecell", crops="lpjml"){
 
   # read in yields [in tons/ha]
@@ -30,7 +30,7 @@ calcYieldImprovementPotential <- function(version="LPJmL5", climatetype="CRU_4",
 
   # yield gap (irrigated vs. rainfed) [in tons/ha]
   tmp <- collapseNames(yields[,,"irrigated"])-collapseNames(yields[,,"rainfed"])
-  # (Note: under N-stress, irrigation may lead to lower yields; also: may lead to shift in growing period -> tmp can have negative values)
+  # (Note: under N-stress, irrigation may lead to lower yields; also: irrigation may lead to shift in growing period -> tmp can have negative values)
 
   # cellular dimension
   if (cells=="magpiecell") {

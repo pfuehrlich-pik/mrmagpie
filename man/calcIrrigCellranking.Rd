@@ -40,7 +40,7 @@ calcIrrigCellranking(
 
 \item{crops}{switch between "magpie" and "lpjml" (default) crops}
 
-\item{method}{method of calculating the rank: "meancellrank" (default): mean over cellrank of proxy crops, "meancroprank": rank over mean of proxy crops, "cropcellrank": rank of one selected proxy crop}
+\item{method}{method of calculating the rank: "meancellrank" (default): mean over cellrank of proxy crops, "meancroprank": rank over mean of proxy crops}
 
 \item{proxycrop}{proxycrop(s) selected for rank calculation}
 }
@@ -48,7 +48,7 @@ calcIrrigCellranking(
 magpie object in cellular resolution
 }
 \description{
-This function calculates a cellranking for the river basin discharge allocation based on yield improvement potential through
+This function calculates a cellranking for the river basin discharge allocation based on yield improvement potential through irrigation
 }
 \examples{
 \dontrun{ calcOutput("calcIrrigCellranking", aggregate=FALSE) }

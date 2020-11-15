@@ -13,7 +13,6 @@
 #' @param irrig_requirement consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements
 #' @param iniarea if TRUE (default): already irrigated area is subracted, if FALSE: total potential land area is used
 #' @param iniyear  Year of initialization for cropland area
-#' @param irrigini Initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")
 #'
 #' @return magpie object in cellular resolution
 #' @author Felicitas Beier
@@ -24,10 +23,10 @@
 #' @import madrat
 #' @import magclass
 
-calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, cells="lpjcell", selectyears=seq(1995, 2095,by=5), iniyear=1995, iniarea=TRUE, irrigini="Jaegermeyr_lpjcell", irrig_requirement="withdrawal"){
+calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2_ES:rcp2p6:co2", harmonize_baseline=FALSE, time="spline", dof=4, cells="lpjcell", selectyears=seq(1995, 2095,by=5), iniyear=1995, iniarea=TRUE, irrig_requirement="withdrawal"){
 
   # read in irrigation water requirements [in m^3 per hectar per year]
-  irrig_wat <- calcOutput("Irrigation2", version=version, cells="magpiecell", selectyears=selectyears, climatetype=climatetype, harmonize_baseline=harmonize_baseline, time=time, dof=dof, irrig_requirement=irrig_requirement, aggregate=FALSE)
+  irrig_wat <- calcOutput("IrrigWatRequirements", version=version, cells="magpiecell", selectyears=selectyears, climatetype=climatetype, harmonize_baseline=harmonize_baseline, time=time, dof=dof, irrig_requirement=irrig_requirement, aggregate=FALSE)
   # pasture is not irrigated in MAgPIE
   irrig_wat <- irrig_wat[,,"pasture",invert=T]
   irrig_wat <- toolCell2isoCell(irrig_wat)
@@ -38,13 +37,18 @@ calcFullIrrigationRequirement <- function(version="LPJmL5", climatetype="HadGEM2
     # subtract area already irrigated in initialization (in mio. ha)
     crops_grown <- calcOutput("Croparea", sectoral="kcr", cells="magpiecell", physical=TRUE, cellular=TRUE, irrigation=TRUE, aggregate=FALSE)[,,"irrigated"]
     crops_grown <- collapseNames(dimSums(crops_grown[,paste0("y",iniyear),],dim=3))
-    land        <- land - crops_grown
+    land           <- land - crops_grown
+    getYears(land) <- NULL
   }
-  # transform units (from mio. ha to ha)
-  land <- land*1e6
+  # negative values may occur because AvlLandSi is based on Ramankutty data and Cropara based on LUH -> set to 0
+  land[land<0] <- 0
 
   # water requirements for full irrigation in cell per crop (in mio. m^3)
-  tmp <- irrig_wat*land*1e-6
+  # Note on unit transformation:
+  # land (mio ha -> ha): multiply with 1e6,
+  # irrigation water requirements (m^3 per ha -> mio. m^3 per ha): devide by 1e6
+  # --> cancels out -> water requirements for full irrigation (mio. m^3)
+  tmp <- irrig_wat*land
 
   # cellular dimension
   if (cells=="magpiecell") {

@@ -14,7 +14,6 @@ calcFullIrrigationRequirement(
   selectyears = seq(1995, 2095, by = 5),
   iniyear = 1995,
   iniarea = TRUE,
-  irrigini = "Jaegermeyr_lpjcell",
   irrig_requirement = "withdrawal"
 )
 }
@@ -36,8 +35,6 @@ calcFullIrrigationRequirement(
 \item{iniyear}{Year of initialization for cropland area}
 
 \item{iniarea}{if TRUE (default): already irrigated area is subracted, if FALSE: total potential land area is used}
-
-\item{irrigini}{Initialization data set for irrigation system initialization ("Jaegermeyr_lpjcell", "LPJmL_lpjcell")}
 
 \item{irrig_requirement}{consumptive (consumption) or non-consumptive (withdrawals) irrigation water requirements}
 
