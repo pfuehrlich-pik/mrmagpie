@@ -9,7 +9,7 @@
 #' @examples
 #' \dontrun{
 #' readSource("GrassSoilEmu",
-#'   subtype = "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100",
+#'   subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100",
 #'   model = "5f5fa2", mfile = "weights"
 #' )
 #' }
@@ -19,7 +19,7 @@
 #'
 
 calcGrassSoilEmu <-
-  function(subtype = "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100", model = "5f5fa2", mfile = "weights") {
+  function(subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100", model = "5f5fa2", mfile = "weights") {
     subtype <- paste(subtype, model, mfile, sep = ":")
 
     x <- readSource("GrassSoilEmu", subtype = subtype, convert = F)

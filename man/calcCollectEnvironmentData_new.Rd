@@ -5,14 +5,14 @@
 \title{calcCollectEnvironmentData_new}
 \usage{
 calcCollectEnvironmentData_new(
-  subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100",
+  subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100",
   sar = 20,
   sel_feat = c("tas", "pr", "lwnet", "rsds", "CO2", "Ks", "Sf", "w_pwp", "w_fc", "w_sat",
     "hsg", "wet")
 )
 }
 \arguments{
-\item{subtype}{Switch between different climate scenarios (default: "CRU_4") eg. "ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100"}
+\item{subtype}{Switch between different climate scenarios (default: "CRU_4") eg. "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100"}
 
 \item{sar}{Average range for smoothing annual variations}
 

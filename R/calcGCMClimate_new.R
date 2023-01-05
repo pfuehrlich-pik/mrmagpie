@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' calcOutput("GCMClimate_new", subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean")
+#' calcOutput("GCMClimate_new", subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean")
 #' }
 #'
 #' @importFrom madrat toolSplitSubtype toolTimeAverage
@@ -18,7 +18,7 @@
 #' @importFrom mstools toolHoldConstant
 #'
 
-calcGCMClimate_new <- function(subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean", smooth = 0) {
+calcGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean", smooth = 0) {
 
   ###### CONFIG ######
   splitting_year <- 2014

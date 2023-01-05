@@ -5,7 +5,7 @@
 \title{calcGCMClimate_new}
 \usage{
 calcGCMClimate_new(
-  subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean",
+  subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean",
   smooth = 0
 )
 }
@@ -24,7 +24,7 @@ Disaggregate CO2 global atmospheric concentration to cellular level
 }
 \examples{
 \dontrun{
-calcOutput("GCMClimate_new", subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean")
+calcOutput("GCMClimate_new", subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1850-2100:tas:annual_mean")
 }
 
 }

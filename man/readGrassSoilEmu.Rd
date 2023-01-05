@@ -5,7 +5,7 @@
 \title{readGrassSoilEmu}
 \usage{
 readGrassSoilEmu(
-  subtype = "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:stddevs_lab"
+  subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:stddevs_lab"
 )
 }
 \arguments{
@@ -22,7 +22,7 @@ Read files related to the training and optimization of the LPJml emulators.
 \dontrun{
 readSource("GrassSoilEmu",
   subtype =
-    "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:weights", convert = F
+    "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:weights", convert = F
 )
 }
 

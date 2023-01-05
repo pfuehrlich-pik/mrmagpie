@@ -5,7 +5,7 @@
 \title{calcPastureSuit}
 \usage{
 calcPastureSuit(
-  subtype = "ISIMIP3b:IPSL-CM6A-LR:1850-2100",
+  subtype = "ISIMIP3bv2:IPSL-CM6A-LR:1850-2100",
   smoothPrecipitation = 10,
   smoothOut = 10
 )

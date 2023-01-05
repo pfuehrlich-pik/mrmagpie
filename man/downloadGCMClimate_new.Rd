@@ -4,10 +4,12 @@
 \alias{downloadGCMClimate_new}
 \title{downloadGCMClimate_new}
 \usage{
-downloadGCMClimate_new(subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:2015-2100:tas")
+downloadGCMClimate_new(
+  subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:2015-2100:tas"
+)
 }
 \arguments{
-\item{subtype}{Switch between different inputs (eg. "ISIMIP3b:IPSL-CM6A-LR:historical:1850-2014:tas")
+\item{subtype}{Switch between different inputs (eg. "ISIMIP3bv2:IPSL-CM6A-LR:historical:1850-2014:tas")
 It consists of GCM version, climate model, scenario and variable.}
 }
 \value{

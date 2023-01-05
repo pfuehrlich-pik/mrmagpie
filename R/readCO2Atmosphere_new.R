@@ -8,14 +8,14 @@
 #' @examples
 #'
 #' \dontrun{
-#' readSource("CO2Atmosphere_new", subtype = "ISIMIP3b:ssp126", convert = FALSE)
+#' readSource("CO2Atmosphere_new", subtype = "ISIMIP3bv2:ssp126", convert = FALSE)
 #' }
 #'
 #' @import madrat
 #' @importFrom utils read.table
 
 readCO2Atmosphere_new <-
-  function(subtype = "ISIMIP3b:ssp126") {
+  function(subtype = "ISIMIP3bv2:ssp126") {
 
     s <- toolSplitSubtype(subtype, list(version=NULL, scenario=NULL))
 

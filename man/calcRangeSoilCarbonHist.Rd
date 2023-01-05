@@ -5,7 +5,7 @@
 \title{calcRangeSoilCarbonHist}
 \usage{
 calcRangeSoilCarbonHist(
-  subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100",
+  subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100",
   lpjml,
   model = "9eaf9b"
 )

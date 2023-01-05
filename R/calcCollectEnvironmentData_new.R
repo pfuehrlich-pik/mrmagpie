@@ -1,6 +1,6 @@
 #' @title calcCollectEnvironmentData_new
 #' @description Calculate climate, CO2 and soil environmental conditions on cellular level
-#' @param subtype Switch between different climate scenarios (default: "CRU_4") eg. "ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100"
+#' @param subtype Switch between different climate scenarios (default: "CRU_4") eg. "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100"
 #' @param sar Average range for smoothing annual variations
 #' @param sel_feat features names to be included in the output file
 #' @return magpie object in cellular resolution
@@ -20,7 +20,7 @@
 #' @importFrom magpiesets findset
 #'
 
-calcCollectEnvironmentData_new <- function(subtype="ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100", sar = 20, sel_feat = c(
+calcCollectEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", sar = 20, sel_feat = c(
   "tas",
   "pr",
   "lwnet",

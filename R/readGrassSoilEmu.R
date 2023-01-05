@@ -8,7 +8,7 @@
 #' \dontrun{
 #' readSource("GrassSoilEmu",
 #'   subtype =
-#'     "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:weights", convert = F
+#'     "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:weights", convert = F
 #' )
 #' }
 #'
@@ -17,7 +17,7 @@
 #'
 
 readGrassSoilEmu <-
-  function(subtype = "ISIMIP3b:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:stddevs_lab") {
+  function(subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100:5f5fa2:stddevs_lab") {
     subtype_split <- toolSplitSubtype(subtype, list(version = NULL, climatemodel = NULL, scenario = NULL, years = NULL, model = NULL, variable = NULL))
     file <- subtype_split$variable
     dirs <- list.dirs()

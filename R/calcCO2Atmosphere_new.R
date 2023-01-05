@@ -1,6 +1,6 @@
 #' @title calcCO2Atmosphere_new
 #' @description Disaggregate CO2 global atmospheric concentration to cellular level
-#' @param subtype specify the version and scenario eg. "ISIMIP3b:ssp126"
+#' @param subtype specify the version and scenario eg. "ISIMIP3bv2:ssp126"
 #' @param co2_evolution Define `rising` for rising CO2 according to the climate scenario selected or
 #' `static` for stable CO2 at the last past time step level.
 #' @return magpie object in cellular resolution
@@ -17,7 +17,7 @@
 #' @importFrom magpiesets findset
 #'
 
-calcCO2Atmosphere_new <- function(subtype = "ISIMIP3b:ssp126" , co2_evolution = "rising" ) {
+calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126" , co2_evolution = "rising" ) {
 
   x <- readSource("CO2Atmosphere_new", subtype = subtype, convert = F)
 

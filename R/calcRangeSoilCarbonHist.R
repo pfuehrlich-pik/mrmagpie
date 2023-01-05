@@ -15,7 +15,7 @@
 #' @importFrom tidyr pivot_wider
 #' @importFrom dplyr left_join
 
-calcRangeSoilCarbonHist <- function(subtype = "ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100", lpjml ,model = "9eaf9b") {
+calcRangeSoilCarbonHist <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", lpjml ,model = "9eaf9b") {
 
   x <- toolSplitSubtype(subtype, list(ismip = NULL, climatemodel = NULL, scenario = NULL, years = NULL))
   Data1 <- NULL

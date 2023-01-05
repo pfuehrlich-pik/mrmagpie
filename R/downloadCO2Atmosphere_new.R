@@ -1,6 +1,6 @@
 #' @title downloadCO2Atmosphere_new
 #' @description Download CO2 atm. inputs used for Lpjml runs
-#' @param subtype Switch between different inputs (eg. "ISIMIP3b:IPSL-CM6A-LR:historical:1850-2014:tas")
+#' @param subtype Switch between different inputs (eg. "ISIMIP3bv2:IPSL-CM6A-LR:historical:1850-2014:tas")
 #' It consists of GCM version, climate model, scenario and variable.
 #' @return metadata entry
 #' @author  Marcos Alves
@@ -8,7 +8,7 @@
 #'
 #' \dontrun{readSource("CO2Atmosphere_new",convert="onlycorrect")}
 
-downloadCO2Atmosphere_new <- function(subtype="ISIMIP3b:ssp126") {
+downloadCO2Atmosphere_new <- function(subtype="ISIMIP3bv2:ssp126") {
 
 
   ##### CONGIF #######

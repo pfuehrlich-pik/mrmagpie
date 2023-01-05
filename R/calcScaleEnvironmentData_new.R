@@ -22,7 +22,7 @@
 #' @importFrom stats sd
 #'
 
-calcScaleEnvironmentData_new <- function(subtype="ISIMIP3b:IPSL-CM6A-LR:ssp126:1965-2100", aggr = F, sar = 20, sel_feat = c(
+calcScaleEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", aggr = F, sar = 20, sel_feat = c(
   "tas",
   "pr",
   "lwnet",

@@ -1,7 +1,7 @@
 #' @title readGCMClimate_new
 #' @description Read Climate data used as LPJmL inputs into MAgPIE objects
 #' @param subtype Switch between different inputs,
-#'                e.g. "ISIMIP3b:IPSL-CM6A-LR:historical:1850-2014:tas"
+#'                e.g. "ISIMIP3bv2:IPSL-CM6A-LR:historical:1850-2014:tas"
 #'                Available variables are: * tas -
 #'                                         * wet -
 #'                                         * per -
@@ -21,7 +21,7 @@
 #' @importFrom magclass collapseNames collapseDim as.magpie clean_magpie
 #' @export
 
-readGCMClimate_new <- function(subtype = "ISIMIP3b:IPSL-CM6A-LR:historical:1850-2014:tas",
+readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:1850-2014:tas",
                                subset  = "annual_mean") {
 
   subtype         <- toolSplitSubtype(subtype,
