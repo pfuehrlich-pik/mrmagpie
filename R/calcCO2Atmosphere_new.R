@@ -8,7 +8,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' calcOutput("CO2Atmosphere_new", aggregate = FALSE, subtype , co2_evolution)
+#' calcOutput("CO2Atmosphere_new", aggregate = FALSE, subtype, co2_evolution)
 #' }
 #'
 #' @import madrat
@@ -17,21 +17,21 @@
 #' @importFrom magpiesets findset
 #'
 
-calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126" , co2_evolution = "rising" ) {
+calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126", co2_evolution = "rising") {
 
-  x <- readSource("CO2Atmosphere_new", subtype = subtype, convert = F)
+  x <- readSource("CO2Atmosphere_new", subtype = subtype, convert = FALSE)
 
-  if(co2_evolution == "rising"){
+  if (co2_evolution == "rising") {
 
     cells <- toolGetMapping("CountryToCellMapping.csv", type = "cell")
     cells$glo <- "GLO"
     x <- toolAggregate(x, rel = cells, from = "glo", to = "celliso")
 
-  } else if(co2_evolution == "static") {
-    past <- tail(findset("past"),1)
-    f_year <- match(past,getYears(x))
+  } else if (co2_evolution == "static") {
+    past <- tail(findset("past"), 1)
+    f_year <- match(past, getYears(x))
     for (i in f_year:length(getYears(x))) {
-      x[, i, ] <- x[,past,]
+      x[, i, ] <- x[, past, ]
     }
     cells <- toolGetMapping("CountryToCellMapping.csv", type = "cell")
     cells$glo <- "GLO"

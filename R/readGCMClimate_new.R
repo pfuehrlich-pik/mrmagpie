@@ -54,7 +54,7 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
       stop("File format of LPJmL input data unknown. Please provide .clm file format.")
     }
 
-    if (subset == "wet"){
+    if (subset == "wet") {
 
       x <- read.LPJ_input(file_name   = file_name,
                           out_years   = paste0("y", years),
@@ -66,7 +66,7 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
       x        <- collapseNames(as.magpie(x, spatial = 1))
 
 
-    } else if (subset == "annual_mean"){
+    } else if (subset == "annual_mean") {
 
       x <- read.LPJ_input(file_name   = file_name,
                           out_years   = paste0("y", years),
@@ -89,12 +89,11 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
 
 
     } else if (subset %in% c("monthly_mean", "monthly_sum")) {
-
-      #define year sets (cut it in bunches)
+      # define year sets (cut it in bunches)
       bunchLength <- 1
-      yearsets    <- split(years, ceiling( seq_along(years) / bunchLength ))
+      yearsets    <- split(years, ceiling(seq_along(years) / bunchLength))
 
-      #define month mapping
+      # define month mapping
       monthLength  <- c(jan = 31, feb = 28, mar = 31, apr = 30,
                         may = 31, jun = 30, jul = 31, aug = 31,
                         sep = 30, oct = 31, nov = 30, dec = 31)
@@ -104,13 +103,12 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
       month2day    <- cbind(day   = 1:sum(monthLength),
                             month = daysMonth)
 
-      #create output object
+      # create output object
       x <- NULL
 
-      #loop over bunches
+      # loop over bunches
       for (b in 1:length(yearsets)) {
-
-        #read in a bunch of years
+        # read in a bunch of years
         tmp <- lpjclass::read.LPJ_input(file_name = file_name,
                                         out_years = paste0("y", yearsets[[b]]),
                                         namesum   = FALSE,
@@ -118,14 +116,14 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
         class(tmp) <- "array"
         tmp        <- as.magpie(tmp)
 
-        #aggregate days to month
+        # aggregate days to month
         tmp      <- toolAggregate(tmp,
                                   rel  = month2day,
                                   from = "day",
                                   to   = "month",
                                   dim  = 3)
 
-        if(subset == "monthly_mean") tmp / as.magpie(monthLength)
+        if (subset == "monthly_mean") tmp / as.magpie(monthLength)
 
         x      <- mbind(x, tmp)
       }
@@ -134,7 +132,7 @@ readGCMClimate_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:historical:185
 
       subYears <- eval(parse(text = subset))
       years    <- intersect(years, subYears)
-      if(any(!(subYears %in% years))) {
+      if (any(!(subYears %in% years))) {
         warning(paste0("Some subsetted years (subset = ", subset,
                        ") are not availabl\n in the original data.
                        Years set to:", years))

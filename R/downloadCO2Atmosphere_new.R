@@ -5,23 +5,22 @@
 #' @return metadata entry
 #' @author  Marcos Alves
 #' @examples
+#' \dontrun{
+#' readSource("CO2Atmosphere_new", convert = "onlycorrect")
+#' }
 #'
-#' \dontrun{readSource("CO2Atmosphere_new",convert="onlycorrect")}
-
-downloadCO2Atmosphere_new <- function(subtype="ISIMIP3bv2:ssp126") {
-
-
+downloadCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126") {
   ##### CONGIF #######
-  substrRight <- function(x, n){
-    substr(x, nchar(x)-n+1, nchar(x))
+  substrRight <- function(x, n) {
+    substr(x, nchar(x) - n + 1, nchar(x))
   }
   ##### CONFIG #######
 
-  x           <- toolSplitSubtype(subtype, list(version=NULL, scenario=NULL))
+  x           <- toolSplitSubtype(subtype, list(version = NULL, scenario = NULL))
   storage     <- "/p/projects/lpjml/input/scenarios/ISIMIP3b"
   list_files  <- list.files(storage)
   files       <- grep(".dat", list_files, value = TRUE)
-  file        <- grep(substrRight(x$scenario,2), files, value=TRUE)
+  file        <- grep(substrRight(x$scenario, 2), files, value = TRUE)
   file_path   <- file.path(storage, file)
 
   if (length(file) > 1) {
@@ -42,7 +41,7 @@ downloadCO2Atmosphere_new <- function(subtype="ISIMIP3bv2:ssp126") {
   meta <- .getMetadata(x$dataset, x$version)
 
   # Compose meta data
-  return(list(url           = paste0(storage,file_path),
+  return(list(url           = paste0(storage, file_path),
               doi           = NULL,
               title         = x$version,
               author        = NULL,

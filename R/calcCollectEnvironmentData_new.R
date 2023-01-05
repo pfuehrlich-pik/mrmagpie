@@ -20,7 +20,7 @@
 #' @importFrom magpiesets findset
 #'
 
-calcCollectEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", sar = 20, sel_feat = c(
+calcCollectEnvironmentData_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", sar = 20, sel_feat = c(
   "tas",
   "pr",
   "lwnet",
@@ -34,13 +34,12 @@ calcCollectEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp1
   "hsg",
   "wet"
 )) {
-
   ##### CONFIG ######
   climate_variables <- c("tas", "pr", "lwnet", "rsds", "wet")
   full_simulation_period <- "1850-2100"
   ##### CONFIG ######
 
-  x <- toolSplitSubtype(subtype, list(version=NULL, climatemodel=NULL, scenario=NULL, period = NULL))
+  x <- toolSplitSubtype(subtype, list(version = NULL, climatemodel = NULL, scenario = NULL, period = NULL))
   years <- as.numeric(unlist(strsplit(x$period, "_|-")))
   syear <- years[1]
   fyear <- years[2]
@@ -49,21 +48,21 @@ calcCollectEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp1
   # read in the individual climate variables, then smooth the dataset with toolAverage and extend the standardize the number of years)
   GCMVariables <- list()
   for (climate_variable in climate_variables) {
-    GCMVariables[[climate_variable]] <- calcOutput("GCMClimate_new", aggregate = F, subtype = paste(x$version,x$climatemodel,x$scenario,full_simulation_period,climate_variable, "annual_mean", sep = ":"))
-    GCMVariables[[climate_variable]] <- toolHoldConstant(GCMVariables[[climate_variable]], seq((max(getYears(GCMVariables[[climate_variable]], as.integer = TRUE))+1),2150, 5))
+    GCMVariables[[climate_variable]] <- calcOutput("GCMClimate_new", aggregate = FALSE, subtype = paste(x$version, x$climatemodel, x$scenario, full_simulation_period, climate_variable, "annual_mean", sep = ":"))
+    GCMVariables[[climate_variable]] <- toolHoldConstant(GCMVariables[[climate_variable]], seq((max(getYears(GCMVariables[[climate_variable]], as.integer = TRUE)) + 1), 2150, 5))
   }
   variables <- mbind(GCMVariables)
-  co2 <- calcOutput("CO2Atmosphere_new", aggregate = F, subtype = paste(x$version, x$scenario, sep = ":"), co2_evolution = "rising")[, (syear - sar/2):fyear, ]
-  co2 <- toolHoldConstant(co2,  seq((max(getYears(co2, as.integer = TRUE))+1),2150, 5))
-  soil <- calcOutput("SoilCharacteristics", aggregate = F)[, getYears(co2), ]
+  co2 <- calcOutput("CO2Atmosphere_new", aggregate = FALSE, subtype = paste(x$version, x$scenario, sep = ":"), co2_evolution = "rising")[, (syear - sar / 2):fyear, ]
+  co2 <- toolHoldConstant(co2,  seq((max(getYears(co2, as.integer = TRUE)) + 1), 2150, 5))
+  soil <- calcOutput("SoilCharacteristics", aggregate = FALSE)[, getYears(co2), ]
 
   constants <- mbind(co2, soil)
   constants <- constants[, getYears(variables), ]
 
   env <- mbind(variables, constants)
   features <- paste0(sel_feat, collapse = "+|")
-  select <- grepl(pattern = features, getItems(env,dim = 3), ignore.case = TRUE)
-  env <- env[,,select]
+  select <- grepl(pattern = features, getItems(env, dim = 3), ignore.case = TRUE)
+  env <- env[, , select]
 
 
   # Calculating weights

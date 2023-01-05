@@ -22,7 +22,7 @@
 #' @importFrom stats sd
 #'
 
-calcScaleEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", aggr = F, sar = 20, sel_feat = c(
+calcScaleEnvironmentData_new <- function(subtype = "ISIMIP3bv2:IPSL-CM6A-LR:ssp126:1965-2100", aggr = FALSE, sar = 20, sel_feat = c(
   "tas",
   "pr",
   "lwnet",
@@ -35,7 +35,6 @@ calcScaleEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126
   "w_sat",
   "hsg"
 )) {
-
   # The dataset will the randomized after it is merged with labels.
   # for that reason, it is being scaled with mean and sd from the hole dataset
   x <- calcOutput("CollectEnvironmentData_new", subtype = subtype, sar = sar, aggregate = aggr, sel_feat = sel_feat)
@@ -45,17 +44,17 @@ calcScaleEnvironmentData_new <- function(subtype="ISIMIP3bv2:IPSL-CM6A-LR:ssp126
 
   xmax <- as.magpie(apply(x, 3, min))
   xmin <- as.magpie(apply(x, 3, max))
-  y <- (x - xmin)/(xmax - xmin)
+  y <- (x - xmin) / (xmax - xmin)
 
   # Calculating weights
   landcoords <- as.data.frame(toolGetMapping("magpie_coord.rda", type = "cell"))
-  landcoords <- cbind(landcoords, rep(1,nrow(landcoords)))
+  landcoords <- cbind(landcoords, rep(1, nrow(landcoords)))
   landcoords <- raster::rasterFromXYZ(landcoords)
   crs(landcoords) <- "+proj=longlat"
   cell_size <- raster::area(landcoords)
-  weight <- cell_size*landcoords
+  weight <- cell_size * landcoords
   weight <- as.magpie(weight)
-  weight <- toolOrderCells(collapseDim(addLocation(weight),dim=c("x","y")))
+  weight <- toolOrderCells(collapseDim(addLocation(weight), dim = c("x", "y")))
 
   return(list(
     x = y,

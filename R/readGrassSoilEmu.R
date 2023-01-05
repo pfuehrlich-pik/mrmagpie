@@ -21,7 +21,7 @@ readGrassSoilEmu <-
     subtype_split <- toolSplitSubtype(subtype, list(version = NULL, climatemodel = NULL, scenario = NULL, years = NULL, model = NULL, variable = NULL))
     file <- subtype_split$variable
     dirs <- list.dirs()
-    folder <- grep(subtype_split$model, dirs, value = T)
+    folder <- grep(subtype_split$model, dirs, value = TRUE)
     if (length(dir.exists(file.path(folder))) != 0) {
       files_list <- list.files(folder)
       files <- files_list[grep(file, files_list)]
