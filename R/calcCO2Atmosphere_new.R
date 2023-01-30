@@ -15,9 +15,8 @@
 #' @import magclass
 #' @importFrom utils tail
 #' @importFrom magpiesets findset
-#'
-
-calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126", co2_evolution = "rising") {
+calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126", # nolint: object_name_linter.
+                                  co2_evolution = "rising") { # nolint: object_name_linter.
 
   x <- readSource("CO2Atmosphere_new", subtype = subtype, convert = FALSE)
 
@@ -29,8 +28,8 @@ calcCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126", co2_evolution =
 
   } else if (co2_evolution == "static") {
     past <- tail(findset("past"), 1)
-    f_year <- match(past, getYears(x))
-    for (i in f_year:length(getYears(x))) {
+    fYear <- match(past, getYears(x))
+    for (i in fYear:length(getYears(x))) {
       x[, i, ] <- x[, past, ]
     }
     cells <- toolGetMapping("CountryToCellMapping.csv", type = "cell")

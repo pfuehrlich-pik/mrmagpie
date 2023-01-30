@@ -16,21 +16,15 @@
 #'
 #' @import madrat
 #' @importFrom stats runif
-#'
+calcGrassSoilEmu <- function(subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100",
+                             model = "5f5fa2", mfile = "weights") {
+  subtype <- paste(subtype, model, mfile, sep = ":")
 
-calcGrassSoilEmu <-
-  function(subtype = "ISIMIP3bv2:IPSL_CM6A_LR:ssp126:1965_2100", model = "5f5fa2", mfile = "weights") {
-    subtype <- paste(subtype, model, mfile, sep = ":")
+  x <- readSource("GrassSoilEmu", subtype = subtype, convert = FALSE)
 
-    x <- readSource("GrassSoilEmu", subtype = subtype, convert = FALSE)
-
-    return(
-      list(
-        x = x,
-        weight = NULL,
-        unit = "none",
-        description = "soil C ML emulator file",
-        isocountries = FALSE
-      )
-    )
-  }
+  return(list(x = x,
+              weight = NULL,
+              unit = "none",
+              description = "soil C ML emulator file",
+              isocountries = FALSE))
+}

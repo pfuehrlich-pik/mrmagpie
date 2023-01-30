@@ -9,7 +9,7 @@
 #' readSource("CO2Atmosphere_new", convert = "onlycorrect")
 #' }
 #'
-downloadCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126") {
+downloadCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126") { # nolint: object_name_linter.
   ##### CONGIF #######
   substrRight <- function(x, n) {
     substr(x, nchar(x) - n + 1, nchar(x))
@@ -17,31 +17,23 @@ downloadCO2Atmosphere_new <- function(subtype = "ISIMIP3bv2:ssp126") {
   ##### CONFIG #######
 
   x           <- toolSplitSubtype(subtype, list(version = NULL, scenario = NULL))
-  storage     <- "/p/projects/lpjml/input/scenarios/ISIMIP3b"
-  list_files  <- list.files(storage)
-  files       <- grep(".dat", list_files, value = TRUE)
+  storage     <- "/p/projects/lpjml/input/scenarios/ISIMIP3b" # nolint: absolute_path_linter.
+  files       <- grep(".dat", list.files(storage), value = TRUE)
   file        <- grep(substrRight(x$scenario, 2), files, value = TRUE)
-  file_path   <- file.path(storage, file)
+  filePath   <- file.path(storage, file)
 
   if (length(file) > 1) {
     stop("More than one file was found, please, check the source folder")
   }
 
-  if (file.exists(file_path)) {
-    file.copy(file_path, file)
+  if (file.exists(filePath)) {
+    file.copy(filePath, file)
   } else {
     stop("Data is not available so far!")
   }
 
-  .getMetadata <- function(dataset, version) {
-    out <- list(doi = NULL, version = NULL, title = NULL, description = NULL)
-    return(out)
-  }
-
-  meta <- .getMetadata(x$dataset, x$version)
-
   # Compose meta data
-  return(list(url           = paste0(storage, file_path),
+  return(list(url           = paste0(storage, filePath),
               doi           = NULL,
               title         = x$version,
               author        = NULL,
