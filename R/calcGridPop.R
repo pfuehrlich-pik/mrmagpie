@@ -90,29 +90,27 @@ calcGridPop <- function(source = "ISIMIP", subtype = "all", # nolint
                 "Use Gao source instead for cellular urban/rural population")
 
         # urban population at country-level
-        urban <- calcOutput("Urban", aggregate = FALSE)
-        getNames(urban) <- gsub("urb_", "", getNames(urban))
+        urbanPop <- calcOutput("Urban", aggregate = FALSE)
+        getNames(urbanPop) <- gsub("urb_", "", getNames(urbanPop))
         # disaggregate to cell level
         coordMapping <- toolGetMappingCoord2Country()
-        urban <- toolAggregate(urban,
-          rel = coordMapping,
-          from = "iso", to = "coords", partrel = TRUE
-        )
-        getCells(urban) <- paste(getItems(urban, dim = 1),
-          coordMapping$iso[coordMapping$coords == getItems(urban, dim = 1)],
-          sep = "."
-        )
-        getSets(urban) <- c("x", "y", "iso", "year", "data")
+        urbanPop <- toolAggregate(urbanPop,
+                                  rel = coordMapping,
+                                  from = "iso", to = "coords", partrel = TRUE)
+        getCells(urbanPop) <- paste(getItems(urbanPop, dim = 1),
+                                    coordMapping$iso[coordMapping$coords == getItems(urbanPop, dim = 1)],
+                                    sep = ".")
+        getSets(urbanPop) <- c("x", "y", "iso", "year", "data")
 
-        past <- past * urban[, getYears(past), ]
-        future <- future * urban[, getYears(future), ]
+        past <- past * urbanPop[, getYears(past), ]
+        future <- future * urbanPop[, getYears(future), ]
       }
     }
 
 
     # harmonize future SSPs to divergence year by making them SSP2
     selectY <- 1:which(getYears(future, as.integer = TRUE) == harmonize_until)
-    harmY <- getYears(future, as.integer = TRUE)[selectY]
+    harmY   <- getYears(future, as.integer = TRUE)[selectY]
     future[, harmY, ] <- future[, harmY, "pop_SSP2"]
 
     # take future years in case of overlap
